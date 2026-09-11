@@ -1,0 +1,36 @@
+Package: rdantic
+Title: Declared Types, Checked at the Boundary
+Version: 0.1.0
+Authors@R:
+    person("David", "Zimmermann-Kollenda", , "david_j_zimmermann@hotmail.com", role = c("aut", "cre"))
+Description: A proof-of-concept port of pydantic's central idea to R. Types are
+    ordinary values built from operators R already has: 'int[1]' is one integer,
+    'num[. > 0]' is a positive double, 'A | B' is a union. Models validate
+    records, typed functions validate their arguments and their result, and JSON
+    is parsed, validated and written with the declared types in hand. Coercion
+    happens only where nothing can be lost, and every problem is reported with
+    the path where it occurred.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.1)
+Imports:
+    stats,
+    utils
+Suggests:
+    jsonlite,
+    testthat (>= 3.0.0)
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Collate:
+    'problems.R'
+    'type.R'
+    'primitives.R'
+    'temporal.R'
+    'combinators.R'
+    'containers.R'
+    'model.R'
+    'fn.R'
+    'serialize.R'
+    'rdantic-package.R'
+Config/testthat/edition: 3

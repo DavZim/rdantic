@@ -1,0 +1,578 @@
+---
+title: "rdantic"
+format: 
+  gfm:
+    toc: true
+    toc-depth: 2
+execute:
+  echo: true
+  warning: false
+knitr:
+  opts_chunk:
+    comment: "#>"
+    collapse: true
+---
+
+```{r}
+#| include: false
+source("rdantic.R")
+```
+
+**Declared types, checked at the boundary.** pydantic's idea, in one file of base R.
+
+```r
+source("rdantic.R")   # base R only; jsonlite is needed for the JSON helpers
+```
+
+| | |
+|---|---|
+| **Types are values** | `int[1]`, `num[. > 0]`, `chr[1] \| NULL` — built from `[` and `\|`, no new syntax |
+| **Length is part of the type** | `int` is any integer vector, `int[1]` is exactly one |
+| **Every problem, with a path** | not the first failure — all of them, each saying where |
+| **Lossless coercion only** | `1` → `1L` yes; `1.5` → `1L` no; `"1"` → `1L` never |
+| **Records and functions** | `model()` for validated objects, `fn()` for typed functions |
+| **JSON in, JSON out** | `from_json()`, `to_json()`, `schema()` |
+
+> **Status: proof of concept.** No S4, no R6, no code generation — closures, attributes
+> and plain lists.
+> **Feedback wanted!**
+
+
+## Motivation
+
+A payload arrives from somewhere you don't control. Plain R happily computes an answer.
+
+```{r}
+payload <- list(id = "1042", qty = 3, unit_price = 19.99, coupon = 1.2)
+
+total <- function(o) o$qty * o$unit_price * (1 - o$coupon)
+total(payload)
+```
+
+A negative total. No warning, no error. `id` is a string, `coupon` is above 1, and the
+bug surfaces three calls later, in a report. Most R bugs look like this: not a crash, but
+a value that was the wrong shape all along.
+
+Declare what the data *is*, once:
+
+```{r}
+#| error: true
+Order <- model("Order",
+  id         = int[1][. > 0],
+  qty        = int[1][. > 0],
+  unit_price = num[1][. >= 0],
+  coupon     = num[1][0 <= . & . <= 1] %default% 0
+)
+
+Order(id = "1042", qty = 3, unit_price = 19.99, coupon = 1.2)
+```
+
+Both mistakes at once, each naming the field and the rule it broke. Good data goes
+through, coerced where that is lossless:
+
+```{r}
+order <- Order(id = 1042, qty = 3, unit_price = 19.99)
+order
+str(order$id)                            # the double 1042 arrived as an integer
+```
+
+Instances stay valid for their whole life, and a typed function can neither be called
+nor return the wrong thing:
+
+```{r}
+#| error: true
+order$qty <- 0
+
+net <- fn(o = Order, ~ num[1][. >= 0], {
+  o$qty * o$unit_price * (1 - o$coupon)
+})
+net(order)
+net(payload)
+```
+
+That is the whole idea. The rest of this document is that idea applied to vectors,
+records, nested data and JSON.
+
+## Types
+
+The four primitives cover R's atomic vectors; `[ ]` adds length and constraints, `|`
+adds alternatives, and a handful of constructors add structure.
+
+```{r}
+int; num; chr; lgl
+```
+
+```{r}
+int[1]
+num[. > 0]
+chr[1] | NULL
+no_na(num)
+one_of("low", "mid", "high")
+fct("low", "mid", "high")
+list_of(int[1])
+list_of(cpu = int[1], memory = int[1])
+frame(id = int, label = chr)
+```
+
+Because types are values, you name them and reuse them:
+
+```{r}
+id_t    <- int[1][. > 0]
+email_t <- chr[1][grepl("@", ., fixed = TRUE)]
+```
+
+A type is callable: calling it validates a value and hands it back, coerced when that
+loses nothing.
+
+```{r}
+#| error: true
+int(c(1, 2, 3))          # whole doubles  -> integer
+num(2L)                  # integer        -> double
+chr(factor("a"))         # factor         -> character
+int(1.5)                 # lossy
+int("3")                 # parsing strings is never implicit
+lgl(1)
+```
+
+Every error names *what was expected* and *what arrived* — type, length, and for scalars
+the value. That shape is the same everywhere in the system.
+
+Want no coercion at all? Values must then already be the right R type:
+
+```{r}
+#| error: true
+options(rdantic.strict = TRUE)
+int(1)
+options(rdantic.strict = FALSE)
+```
+
+## Length
+
+R's central data structure is the vector, so a type without a length is a type of
+vectors. `T[n]` fixes the length; `T[1]` is a scalar.
+
+```{r}
+#| error: true
+int[3](c(1, 2, 3))
+int[3](c(1, 2))
+int[1](c(1, 2))
+```
+
+The `[1]` matters more than it looks: most bugs from R's recycling rules come from a
+vector arriving where one value was meant.
+
+## Constraints
+
+Anything inside `[ ]` that mentions `.` is a predicate over the value. It must return
+`TRUE` for every element. Constraints and lengths chain in any order.
+
+```{r}
+#| error: true
+num[. > 0](c(1, 2))
+num[. > 0](c(1, -2))
+
+int[1][. > 5](9)
+int[1][. > 5](3)
+
+chr[1][nchar(.) <= 3]("abcd")
+```
+
+The constraint's source text becomes part of the type's name, so the error tells the
+reader the rule that was broken, not just that one was.
+
+## Unions, optionals, defaults
+
+`A | B` accepts either. `T | NULL` is the idiom for optional. `%default%` attaches a
+default value, used by models and typed functions when a value is not supplied.
+
+```{r}
+#| error: true
+(int[1] | chr[1])(7)
+(int[1] | chr[1])("seven")
+(int[1] | chr[1])(TRUE)
+
+(int[1] | NULL)(NULL)
+
+one_of("admin", "user") %default% "user"
+int[1] | NULL %default% NULL              # a default on either side applies to the union
+```
+
+## Dates, factors, missing values
+
+R's other quiet failure modes: a `Date` is a number wearing a class, a factor is an
+integer wearing labels, and `NA` sails through every operator. Each gets a type.
+
+```{r}
+#| error: true
+date("2024-05-17")                        # ISO-8601 is unambiguous, so it is parsed
+date("17/05/2024")
+num(Sys.Date())                           # ... but a Date is never silently a number
+fct("low", "high")("high")
+no_na(num)(c(1, NA))
+```
+
+When nothing built in fits, `type_from()` takes a plain predicate and an optional
+coercion:
+
+```{r}
+#| error: true
+hex <- type_from("hex", function(x) is.character(x) && all(grepl("^#[0-9a-f]{6}$", x)))
+hex("#00ff99")
+hex("green")
+```
+
+## Named lists
+
+Give `list_of()` one type and you get a map: any keys, one value type. Keys are kept, and
+a failure is reported by key rather than by position — this is what a JSON object with
+arbitrary keys parses into.
+
+```{r}
+#| error: true
+budget <- list_of(cpu = int[1][. > 0], memory = int[1][. > 0])
+
+budget(list(cpu = 4, memory = 16))
+budget(list(cpu = 4, memory = 0, disk = "big"))
+```
+
+Name the arguments instead and you get the opposite: a fixed key set with one rule per
+key — still a plain named list on the way out, with no class and no model name.
+
+```{r}
+#| error: true
+limits <- list_of(cpu = int[1][0 < . & . < 12], memory = int[1][0 < . & . < 128])
+limits
+
+str(limits(list(cpu = 4, memory = 16)))
+limits(list(cpu = 16, memory = 512))
+limits(list(cpu = 4))
+to_json(limits(list(cpu = 4L, memory = 16L)))
+```
+
+Missing keys are reported, `%default%` fills them in, and `.extra = "forbid"` refuses
+unknown ones — the same record rules `model()` uses. Reach for a model when the record
+deserves a name, a class and inheritance; reach for `list_of(a = T, ...)` when it is just
+a shape.
+
+## Records: `model()`
+
+A model is a set of named, typed fields. `model()` returns a constructor, and that
+constructor is itself a type (so models nest and can be used anywhere a type is).
+
+```{r}
+User <- model("User",
+  id     = id_t,
+  name   = chr[1],
+  email  = email_t,
+  age    = int[1] | NULL,
+  role   = one_of("admin", "user") %default% "user",
+  tags   = chr %default% character(),
+  friend = opt("User")                    # optional, refers to this model by name
+)
+User
+```
+
+Construct one like any R function — the constructor has real formals, so autocomplete
+works:
+
+```{r}
+ada <- User(id = 1, name = "Ada", email = "ada@lovelace.org")
+ada
+str(ada$id)                              # coerced to integer on the way in
+```
+
+A field is required unless it has a default or accepts `NULL`. Every problem is reported:
+
+```{r}
+#| error: true
+User(name = 42, email = "nope", role = "god")
+```
+
+Fields are validated on assignment too, and the object is sealed — a typo cannot quietly
+invent a field, or quietly read a different one:
+
+```{r}
+#| error: true
+ada$age <- 36L
+ada$age
+ada$age <- "thirty-six"
+ada$nickname <- "Countess"
+ada$nam
+```
+
+Instances are plain lists, so they behave like every other R value: copy on modify, no
+action at a distance.
+
+```{r}
+copy <- ada
+copy$name <- "Grace"
+c(ada$name, copy$name)
+identical(ada, User(id = 1, name = "Ada", email = "ada@lovelace.org", age = 36L))
+```
+
+## Nesting, and errors that report everything
+
+Since a model is a type, models compose. Where a model is expected, a plain list is
+accepted and parsed — this is what makes JSON input work later.
+
+```{r}
+Team <- model("Team",
+  lead    = User,
+  members = list_of(User),
+  roster  = frame(id = int, name = chr)
+)
+
+bob  <- User(id = 2, name = "Bob", email = "bob@example.org", friend = ada)
+team <- Team(lead = ada, members = list(bob),
+             roster = data.frame(id = c(1, 2), name = c("Ada", "Bob")))
+team
+team$members[[1]]$friend$name
+```
+
+Three mistakes at three depths, one error:
+
+```{r}
+#| error: true
+Team(
+  lead    = list(id = 1, name = "Ada", email = "ada.lovelace"),
+  members = list(list(id = 2, name = "Bob", email = "b@b", age = 34.5)),
+  roster  = data.frame(id = c(1, 2.5), name = c("a", "b"))
+)
+```
+
+Errors are machine-readable: a condition of class `typed_error` whose `$problems` is a
+list of `path` / `expected` / `got` / `hint` records, so tooling can consume it, not just
+people.
+
+```{r}
+tryCatch(User(id = "x", name = 1), typed_error = function(e)
+  data.frame(
+    path     = vapply(e$problems, `[[`, "", "path"),
+    expected = vapply(e$problems, `[[`, "", "expected"),
+    got      = vapply(e$problems, `[[`, "", "got")
+  ))
+```
+
+When wrong input is expected rather than exceptional — a web form, an upload — use
+`try_parse()`, which returns the same records instead of throwing:
+
+```{r}
+r <- try_parse(User, list(id = 1.5, name = "Ada", email = "nope"))
+r$ok
+str(r$problems[[2]])
+is_valid(User, list(id = 1, name = "Ada", email = "a@b"))
+```
+
+## Inheritance, partials, unknown fields
+
+```{r}
+Admin <- extend(User, "Admin", permissions = list_of(chr[1]))
+root  <- Admin(id = 1, name = "root", email = "root@example.org",
+               permissions = list("all"))
+inherits(root, "User")
+ada$friend <- root                       # an Admin is a User
+
+UserPatch <- partial(User)               # every field optional, defaults dropped
+UserPatch(name = "Grace")
+```
+
+When parsing from a list, unknown keys are ignored by default (as in pydantic, and so
+that JSON written from a subclass still parses as the parent). A model can forbid them:
+
+```{r}
+#| error: true
+Strict <- model("Strict", x = int[1], .extra = "forbid")
+from_list(Strict, list(x = 1, y = 2))
+```
+
+## Typed functions: `fn()`
+
+Types sit where R would put defaults; an unnamed formula `~ T` declares the return type;
+the last unnamed expression is the body. Defaults use `%default%`; arguments whose type
+accepts `NULL` may be omitted.
+
+```{r}
+#| error: true
+greet <- fn(name = chr[1], greeting = chr[1] %default% "Hello", ~ chr[1], {
+  paste0(greeting, ", ", name, "!")
+})
+greet
+greet("Ada")
+greet("Ada", "Bonjour")
+greet(c("Ada", "Bob"))
+```
+
+The return value is checked as well — a typed function cannot leak a wrong result:
+
+```{r}
+#| error: true
+half <- fn(x = int[1], ~ int[1], { x / 2 })
+half(4)                                  # 2 is a whole double: coerces to 2L
+half(3)                                  # 1.5 is not an int
+```
+
+Give `...` a type to check everything passed through it. Every bad argument is reported
+in one error, as with models:
+
+```{r}
+#| error: true
+log_line <- fn(level = one_of("info", "warn"), ... = chr[1], ~ chr[1], {
+  paste0("[", level, "] ", paste(..., collapse = " "))
+})
+log_line("info", "disk", "full")
+log_line("debug", "disk", 3)
+```
+
+Checks are compiled once, when the function is defined, and cost tens of microseconds per
+call — nothing at an API boundary, noticeable in a tight loop. Turn them off globally
+when you no longer want to pay for them:
+
+```{r}
+options(rdantic.check = FALSE)
+half(3)
+options(rdantic.check = TRUE)
+```
+
+## Composing typed functions
+
+Since a type is just a value plus a predicate, a *function* type needs no new machinery:
+
+```{r}
+pricing_rule <- anything[inherits(., "typed_fn")]
+Money        <- num[1][. >= 0]
+```
+
+`rule_for()` **returns** a typed function; `invoice()` **takes** one. Three typed
+functions, stacked:
+
+```{r}
+rule_for <- fn(kind = one_of("standard", "bulk", "clearance"), ~ pricing_rule, {
+  switch(kind,
+    standard  = fn(o = Order, ~ Money, { o$qty * o$unit_price }),
+    bulk      = fn(o = Order, ~ Money, { o$qty * o$unit_price * 0.9 }),
+    clearance = fn(o = Order, ~ Money, { o$qty * o$unit_price - 500 })
+  )
+})
+
+invoice <- fn(o = Order, rule = pricing_rule, ~ Money, {
+  round(rule(o), 2)
+})
+
+invoice(order, rule_for("bulk"))
+```
+
+The `clearance` rule is well-typed on the way in and wrong on the way out. Nothing
+catches it until the arithmetic has already run:
+
+```{r}
+#| error: true
+invoice(order, rule_for("clearance"))
+```
+
+The report names the frame that produced the bad value (`rule()`, the innermost of the
+three) and the stage (`<return>`), not the outer call the user made. Compare the other
+three places the same pipeline can break — each one is caught as early as it possibly
+can be:
+
+```{r}
+#| error: true
+rule_for("half off")                     # (1) argument, at the door
+invoice(order, function(o) 0)            # (2) argument: a function, but not a typed one
+invoice(payload, rule_for("bulk"))       # (2) argument: raw list, parsed then rejected
+```
+
+And a factory that forgets to return a function is caught by its own return type,
+before anyone can call the result:
+
+```{r}
+#| error: true
+broken_for <- fn(kind = chr[1], ~ pricing_rule, { toupper(kind) })
+broken_for("bulk")
+```
+
+## JSON and schema
+
+`to_json()` is type-aware: a field declared `[1]` becomes a JSON scalar, any other
+vector becomes an array, even when it has one element.
+
+```{r}
+grace <- User(id = 3, name = "Grace", email = "grace@navy.mil", tags = "cobol")
+to_json(grace)
+```
+
+`from_json()` parses and validates in one step. JSON arrays come back as R vectors and
+arrays of objects as data frames, because the types accept those shapes — there is no
+separate JSON mode.
+
+```{r}
+#| error: true
+team2 <- from_json(Team, to_json(team))
+str(team2$roster)
+from_json(User, '{"id": 1.5, "name": ["a", "b"], "email": "x@y"}')
+```
+
+And a JSON Schema for interoperating with anything else that speaks types:
+
+```{r}
+to_json(schema(User))
+```
+
+## Cheat sheet
+
+| Want | Write |
+|---|---|
+| integer / double / string / logical vector | `int`, `num`, `chr`, `lgl` |
+| exactly n elements | `T[n]` |
+| constraint | `T[. > 0]`, `chr[1][nchar(.) < 20]` |
+| optional | `T \| NULL`, `opt(T)`, `opt("ModelName")` |
+| either | `A \| B` |
+| enum | `one_of("a", "b")` |
+| date / time / factor | `date`, `datetime`, `fct("a", "b")` |
+| no missing values | `no_na(T)` |
+| custom type | `type_from("name", predicate, coerce)` |
+| list of | `list_of(T)` |
+| named list with fixed keys | `list_of(a = T, b = T)` |
+| data.frame with typed columns | `frame(col = T, ...)` |
+| a function value | `anything[is.function(.)]`, `anything[inherits(., "typed_fn")]` |
+| default | `T %default% value` |
+| record | `model("Name", f = T, ...)` |
+| forward / self reference | `ref("Name")`, `opt("Name")` |
+| subclass, partial | `extend(M, "Sub", ...)`, `partial(M)` |
+| reject unknown keys | `model(..., .extra = "forbid")`, `frame(..., .extra = "forbid")` |
+| typed function | `fn(a = T, ..., ~ Ret, { body })` |
+| typed `...` | `fn(a = T, ... = T, ~ Ret, { body })` |
+| validate anything | `T(x)`, `parse_as(T, x)`, `from_list(M, x)` |
+| validate without throwing | `try_parse(T, x)`, `is_valid(T, x)` |
+| fields of a model or value | `fields(M)`, `fields(x)` |
+| no coercion / no checks | `options(rdantic.strict = TRUE)`, `options(rdantic.check = FALSE)` |
+| JSON | `to_json(x)`, `from_json(T, txt)`, `schema(T)` |
+| catch errors | `tryCatch(..., typed_error = function(e) e$problems)` |
+
+## How it works
+
+* **Types are closures** carrying a `spec` attribute (`name`, `validate`, `schema`).
+  `[.type` captures its argument with `substitute()` — a bare number is a length, an
+  expression mentioning `.` is a predicate. `Ops.type` implements `|`. That is the whole
+  DSL; there is no parser.
+* **Models compile to constructors** with real formals, built with `formals<-` and
+  `bquote()`. Instances are **plain lists** carrying their own `spec`, so they copy on
+  modify like every other R value and `identical()`, `saveRDS()` and `str()` behave;
+  `$<-` dispatches to a method that validates and returns the updated value.
+* **Validators return the value itself**, or a `typed_problems` list of records. The
+  happy path allocates nothing beyond the value, and `rdantic.strict` is read once per
+  top-level validation rather than once per element.
+* **`fn()` rewrites the function**: types come off the formals, one check block is
+  prepended, the return is wrapped. R 4.4 reserved `declare()` for exactly this kind of
+  annotation; when it gains semantics, `fn()` can emit it and the checks move into the
+  interpreter without user code changing.
+* **Coercion is lossless only**: whole doubles → int (never out of range), int → double,
+  factor → character, ISO-8601 text → date. While parsing JSON, also: unnamed list of
+  scalars → vector, list of records → data frame. Nothing else, ever.
+
+## Not in this proof of concept
+
+* Discriminated unions for polymorphic JSON (`{"type": "admin", ...}` choosing the model).
+* Generic models (`Page(of = User)`).
+* Cross-field validators (`.check = function(self) ...`) and row-wise constraints in
+  `frame()` beyond predicates over a column.
+* Packaging all of this as an actual R package, with a namespace instead of `source()`.
