@@ -21,7 +21,7 @@
 The validated values in field order, or a \code{typed_problems} object.
 }
 \description{
-Record semantics, shared by \code{list_of(a = T, ...)} and \code{\link[=model]{model()}}: one type per
+Record semantics, shared by \code{list_of(a = T, ...)} and \code{\link[=struct]{struct()}}: one type per
 key, defaults filled in, missing keys reported, unknown keys ignored or
 refused. Every problem is collected, not just the first.
 }

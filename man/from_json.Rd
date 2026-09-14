@@ -21,7 +21,7 @@ mode. Reshaping happens only here and in \code{\link[=from_list]{from_list()}}, 
 is handed straight to a type.
 }
 \examples{
-Reading <- model("Reading", station = chr[1], celsius = num[1], at = datetime[1])
+Reading <- struct("Reading", station = chr[1], celsius = num[1], at = datetime[1])
 from_json(Reading, '{"station": "KOA", "celsius": 21.5, "at": "2024-05-17T09:30:00"}')
 
 from_json(list_of(int[1]), '{"cpu": 4, "memory": 16}')

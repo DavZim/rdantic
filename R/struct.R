@@ -1,19 +1,19 @@
-#' Where models register themselves by name
+#' Where structs register themselves by name
 #'
 #' Only [ref()] reads it, and only once per reference: instances carry their own
-#' spec, so redefining a model cannot retype values that already exist.
+#' spec, so redefining a struct cannot retype values that already exist.
 #'
 #' @keywords internal
 #' @noRd
 .registry <- new.env(parent = emptyenv())
 
-#' A model's signature, for spotting redefinitions
+#' A struct's signature, for spotting redefinitions
 #'
-#' @param spec A model spec.
+#' @param spec A struct spec.
 #' @return A single string.
 #' @keywords internal
 #' @examples
-#' rdantic:::.sig(rdantic:::.spec(model("SigDemo", x = int[1])))
+#' rdantic:::.sig(rdantic:::.spec(struct("SigDemo", x = int[1])))
 .sig <- function(spec)
   paste0(
     spec$name,
@@ -28,18 +28,18 @@
     spec$extra
   )
 
-#' Refer to a model by name
+#' Refer to a struct by name
 #'
-#' Lets a model refer to itself, or to one that is defined later. The name is
-#' resolved on first use and then cached, so redefining a model in a live
-#' session cannot silently retype the models that already refer to it.
+#' Lets a struct refer to itself, or to one that is defined later. The name is
+#' resolved on first use and then cached, so redefining a struct in a live
+#' session cannot silently retype the structs that already refer to it.
 #'
-#' @param name The model's name.
+#' @param name The struct's name.
 #' @return A type.
 #' @export
 #' @seealso [opt()] for the common `ref(name) | NULL` case.
 #' @examples
-#' Node <- model("Node", value = int[1], next_ = opt("Node"))
+#' Node <- struct("Node", value = int[1], next_ = opt("Node"))
 #' Node(value = 1, next_ = list(value = 2))
 #'
 #' try(parse_as(ref("NeverDefined"), list()))
@@ -52,7 +52,7 @@ ref <- function(name) {
         m <- get0(name, envir = .registry, inherits = FALSE)
         if (is.null(m))
           .abort_msg(sprintf(
-            'unknown model `%s`: define it with model("%s", ...) before validating',
+            'unknown struct `%s`: define it with struct("%s", ...) before validating',
             name,
             name
           ))
@@ -67,21 +67,25 @@ ref <- function(name) {
 #' Define a record type
 #'
 #' Returns a constructor with real formals -- so autocomplete works -- which is
-#' itself a type, so models nest and can be used anywhere a type can. Instances
+#' itself a type, so structs nest and can be used anywhere a type can. Instances
 #' are plain named lists with a class, which means they copy on modify like
 #' every other R value.
 #'
-#' Where a model is expected, a plain list is parsed into it. That is what makes
+#' Where a struct is expected, a plain list is parsed into it. That is what makes
 #' JSON input work with no separate JSON mode.
 #'
-#' @param ... The model's name as the single unnamed string, then named fields,
-#'   one type each. `.extra = "forbid"` rejects unknown keys when parsing a
-#'   list; `.parents` is set by [extend()] and is not usually written by hand.
-#' @return A constructor of class `typed_model`, which is also a type.
+#' @param .name The struct's name, as a single string.
+#' @param ... Named fields, one type each.
+#' @param .description The struct's JSON Schema `"description"`, or `NULL` to
+#'   omit it. Use [desc()]/[`%doc%`] for a field's own description instead.
+#' @param .parents Set by [extend()]; not usually written by hand.
+#' @param .extra `"forbid"` rejects unknown keys when parsing a list into this
+#'   struct; the default `"ignore"` drops them.
+#' @return A constructor of class `typed_struct`, which is also a type.
 #' @export
 #' @seealso [extend()], [partial()], [list_of()], [fields()]
 #' @examples
-#' Account <- model("Account",
+#' Account <- struct("Account",
 #'   id      = int[1][. > 0],
 #'   email   = chr[1][grepl("@", ., fixed = TRUE)],
 #'   credit  = num[1][. >= 0] %default% 0,
@@ -104,51 +108,62 @@ ref <- function(name) {
 #'
 #' # a plain list is parsed
 #' from_list(Account, list(id = 2, email = "bob@example.org"))
-#' try(from_list(model("Shut", x = int[1], .extra = "forbid"), list(x = 1, y = 2)))
-model <- function(...) {
-  # model("Name", field = T, ...): the single unnamed string is the name, so no
-  # formal argument can ever collide with a field (e.g. a field called `name`).
-  args <- list(...)
-  nms <- names(args)
-  if (is.null(nms)) nms <- rep("", length(args))
-  is_name <- nms == "" &
-    vapply(args, function(a) is.character(a) && length(a) == 1, NA)
-  if (sum(is_name) != 1)
-    stop('model() needs exactly one unnamed name: model("User", ...)')
-  name <- args[[which(is_name)]]
-  parents <- if (".parents" %in% nms) args[[".parents"]] else character()
-  extra <- if (".extra" %in% nms)
-    match.arg(args[[".extra"]], c("ignore", "forbid")) else "ignore"
-  fields <- args[!is_name & !nms %in% c(".parents", ".extra")]
-  if (length(fields) && any(!nzchar(names(fields))))
-    stop("all model fields must be named")
+#' try(from_list(struct("Shut", x = int[1], .extra = "forbid"), list(x = 1, y = 2)))
+struct <- function(
+  .name,
+  ...,
+  .description = NULL,
+  .parents = character(),
+  .extra = c("ignore", "forbid")
+) {
+  # dot-prefixed formals, like extend()'s `.parent`, so no field can ever
+  # collide with them (e.g. a field called `name`, `parents` or `extra`).
+  if (!is.character(.name) || length(.name) != 1)
+    stop('struct() needs exactly one unnamed name: struct("User", ...)')
+  if (!is.null(.description) && (!is.character(.description) || length(.description) != 1))
+    stop("struct() needs .description to be a single string, or NULL")
+  extra <- match.arg(.extra)
+  fields <- list(...)
+  nms <- names(fields)
+  if (is.null(nms)) nms <- rep("", length(fields))
+  if (length(fields) && any(!nzchar(nms)))
+    stop("all struct fields must be named")
   fields <- lapply(fields, as_type)
+  name <- .name
+  parents <- .parents
+  description <- .description
   spec <- list(name = name, fields = fields, parents = parents, extra = extra)
   spec$validate <- function(x, path) {
     if (inherits(x, name)) return(x)
-    # instances are lists, so a *different* model must not be parsed as one
+    # instances are lists, so a *different* struct must not be parsed as one
     if (inherits(x, "typed_instance"))
       return(.bad(path, paste0("<", name, ">"), .got(x)))
-    if (is.list(x) && !is.data.frame(x)) return(.new_instance(spec, x, path))
+    if (is.list(x) && !is.data.frame(x)) return(.new_instance(spec, x, path, spec_env))
     .bad(path, paste0("<", name, ">"), .got(x))
   }
   spec$schema <- function() {
-    list(
-      type = "object",
-      title = name,
-      properties = lapply(fields, function(f) .spec(f)$schema()),
-      required = as.list(.required_fields(fields)),
-      additionalProperties = FALSE
+    header <- list(type = "object", title = name)
+    if (!is.null(description)) header$description <- description
+    c(
+      header,
+      list(
+        properties = lapply(fields, function(f) .spec(f)$schema()),
+        required = as.list(.required_fields(fields)),
+        additionalProperties = FALSE
+      )
     )
   }
-  ctor <- .make_model(spec)
-  # scoped, so the previous constructor is not captured by this model's closures
+  # instances carry this instead of `spec` itself: object.size() charges an
+  # environment a small fixed cost rather than recursing into its contents
+  spec_env <- list2env(spec, parent = emptyenv())
+  ctor <- .make_struct(spec, spec_env)
+  # scoped, so the previous constructor is not captured by this struct's closures
   local({
     prev <- get0(name, envir = .registry, inherits = FALSE)
     if (!is.null(prev) && !identical(.sig(.spec(prev)), .sig(spec)))
       warning(
         sprintf(
-          "model `%s` redefined; values and refs made earlier keep the previous definition",
+          "struct `%s` redefined; values and refs made earlier keep the previous definition",
           name
         ),
         call. = FALSE
@@ -158,17 +173,19 @@ model <- function(...) {
   ctor
 }
 
-#' Compile a model spec into a constructor
+#' Compile a struct spec into a constructor
 #'
 #' The constructor gets one formal per field, so `args()`, autocomplete and
 #' R's own "unused argument" error all work before any validation runs.
 #'
-#' @param spec A model spec.
-#' @return A constructor of class `typed_model`.
+#' @param spec A struct spec.
+#' @param spec_env `spec`, wrapped in an environment; what instances carry as
+#'   their own `spec` attribute (see [.bind_instance()]).
+#' @return A constructor of class `typed_struct`.
 #' @keywords internal
 #' @examples
-#' args(rdantic:::.make_model(rdantic:::.spec(model("MkDemo", a = int[1], b = chr[1]))))
-.make_model <- function(spec) {
+#' args(rdantic:::.make_struct(rdantic:::.spec(struct("MkDemo", a = int[1], b = chr[1]))))
+.make_struct <- function(spec, spec_env = list2env(spec, parent = emptyenv())) {
   fields <- spec$fields
   ctor <- function() NULL
   formals(ctor) <- stats::setNames(
@@ -185,29 +202,32 @@ model <- function(...) {
     quote(.args <- list()),
     collect,
     quote({
-      r <- .new_instance(.spec_, .args, "")
+      r <- .new_instance(.spec_, .args, "", .spec_env_)
       if (.is_bad(r)) .abort(r, .spec_$name)
       r
     })
   ))
-  env <- new.env(parent = environment(.make_model))
+  env <- new.env(parent = environment(.make_struct))
   env$.spec_ <- spec
+  env$.spec_env_ <- spec_env
   environment(ctor) <- env
   attr(ctor, "spec") <- spec
-  class(ctor) <- c("typed_model", "type")
+  class(ctor) <- c("typed_struct", "type")
   ctor
 }
 
 #' Validate arguments and build an instance
 #'
-#' @param spec A model spec.
+#' @param spec A struct spec.
 #' @param args The supplied named values.
 #' @param path The path prefix for problem records.
+#' @param spec_env `spec`, wrapped in an environment; defaults to `spec`
+#'   itself so direct calls (e.g. from examples) still work.
 #' @return An instance, or a `typed_problems` object.
 #' @keywords internal
 #' @examples
-#' rdantic:::.new_instance(rdantic:::.spec(model("NewDemo", a = int[1])), list(a = 1), "")
-.new_instance <- function(spec, args, path) {
+#' rdantic:::.new_instance(rdantic:::.spec(struct("NewDemo", a = int[1])), list(a = 1), "")
+.new_instance <- function(spec, args, path, spec_env = spec) {
   vals <- .check_fields(
     spec$fields,
     args,
@@ -216,34 +236,40 @@ model <- function(...) {
     paste0("<", spec$name, ">")
   )
   if (.is_bad(vals)) return(vals)
-  .bind_instance(spec, vals)
+  .bind_instance(spec, vals, spec_env)
 }
 
 #' Wrap validated values as an instance
 #'
 #' Instances are plain lists: copy-on-modify like every other R value, cheap to
-#' build, and `identical()`, `saveRDS()` and `str()` all behave.
+#' build, and `identical()`, `saveRDS()` and `str()` all behave. The `spec`
+#' attribute is an environment, not the spec list itself, so `object.size()`
+#' -- which charges environments a small fixed cost instead of recursing into
+#' them -- does not report each instance as if it owned a private copy of the
+#' whole (shared) struct definition.
 #'
-#' @param spec A model spec.
+#' @param spec A struct spec.
 #' @param vals The validated values.
+#' @param spec_env `spec`, wrapped in an environment; defaults to `spec`
+#'   itself so direct calls (e.g. from examples) still work.
 #' @return An object of class `c(name, parents, "typed_instance")`.
 #' @keywords internal
 #' @examples
-#' rdantic:::.bind_instance(rdantic:::.spec(model("BindDemo", a = int[1])), list(a = 1L))
-.bind_instance <- function(spec, vals)
+#' rdantic:::.bind_instance(rdantic:::.spec(struct("BindDemo", a = int[1])), list(a = 1L))
+.bind_instance <- function(spec, vals, spec_env = spec)
   structure(
     vals[names(spec$fields)],
     class = c(spec$name, spec$parents, "typed_instance"),
-    spec = spec
+    spec = spec_env
   )
 
-#' Field names of a model or an instance
+#' Field names of a struct or an instance
 #'
-#' @param x A model, an instance, or anything [as_type()] accepts.
+#' @param x A struct, an instance, or anything [as_type()] accepts.
 #' @return A character vector, in declaration order.
 #' @export
 #' @examples
-#' Pt <- model("Pt", x = num[1], y = num[1])
+#' Pt <- struct("Pt", x = num[1], y = num[1])
 #' fields(Pt)
 #' fields(Pt(x = 1, y = 2))
 fields <- function(x) {
@@ -258,7 +284,7 @@ fields <- function(x) {
 #' @return The field's value.
 #' @keywords internal
 #' @examples
-#' rdantic:::.get_field(model("GetDemo", a = int[1])(a = 1), "a")
+#' rdantic:::.get_field(struct("GetDemo", a = int[1])(a = 1), "a")
 .get_field <- function(x, i) {
   if (is.numeric(i)) return(.subset2(x, i))
   f <- fields(x)
@@ -288,7 +314,7 @@ fields <- function(x) {
 #' @rdname instance-get
 #' @export
 #' @examples
-#' Card <- model("Card", holder = chr[1], number = chr[1])
+#' Card <- struct("Card", holder = chr[1], number = chr[1])
 #' cc <- Card(holder = "Ada", number = "4111")
 #' cc$holder
 #' cc[["number"]]
@@ -307,7 +333,7 @@ fields <- function(x) {
 #' @return A new instance.
 #' @keywords internal
 #' @examples
-#' rdantic:::.set_field(model("SetDemo", a = int[1])(a = 1), "a", 2)
+#' rdantic:::.set_field(struct("SetDemo", a = int[1])(a = 1), "a", 2)
 .set_field <- function(x, name, value) {
   spec <- attr(x, "spec")
   t <- spec$fields[[name]]
@@ -343,7 +369,7 @@ fields <- function(x) {
 #' @rdname instance-set
 #' @export
 #' @examples
-#' Job <- model("Job", state = one_of("queued", "done"), tries = int[1])
+#' Job <- struct("Job", state = one_of("queued", "done"), tries = int[1])
 #' j <- Job(state = "queued", tries = 0)
 #' j$state <- "done"
 #' j$state
@@ -355,38 +381,38 @@ fields <- function(x) {
 #' @export
 `[[<-.typed_instance` <- function(x, i, value) .set_field(x, i, value)
 
-#' Parse a plain list into a model
+#' Parse a plain list into a struct
 #'
 #' The list-shaped counterpart of the constructor: unknown keys are ignored
-#' unless the model was declared with `.extra = "forbid"`, and nested lists are
-#' parsed into nested models.
+#' unless the struct was declared with `.extra = "forbid"`, and nested lists are
+#' parsed into nested structs.
 #'
-#' @param model A model, or anything [as_type()] accepts.
+#' @param struct A struct, or anything [as_type()] accepts.
 #' @param x A named list.
 #' @return An instance.
 #' @export
 #' @seealso [from_json()], [try_parse()]
 #' @examples
-#' Msg <- model("Msg", topic = chr[1], size = int[1])
+#' Msg <- struct("Msg", topic = chr[1], size = int[1])
 #' from_list(Msg, list(topic = "orders", size = 12))
 #' from_list(Msg, list(topic = "orders", size = 12, extra = "ignored"))
 #' try(from_list(Msg, list(topic = "orders")))
-from_list <- function(model, x) .entry(parse_as(model, x), parsing = TRUE)
+from_list <- function(struct, x) .entry(parse_as(struct, x), parsing = TRUE)
 
-#' Subclass a model
+#' Subclass a struct
 #'
 #' The child gets the parent's fields plus its own, inherits the parent's class
 #' -- so it is accepted wherever the parent is -- and may retype a parent field
 #' by repeating its name.
 #'
-#' @param .parent The model to extend.
+#' @param .parent The struct to extend.
 #' @param ... The subclass's name as the single unnamed string, then extra or
 #'   replacement fields.
-#' @return A constructor of class `typed_model`.
+#' @return A constructor of class `typed_struct`.
 #' @export
-#' @seealso [model()], [partial()]
+#' @seealso [struct()], [partial()]
 #' @examples
-#' Animal <- model("Animal", name = chr[1], legs = int[1] %default% 4L)
+#' Animal <- struct("Animal", name = chr[1], legs = int[1] %default% 4L)
 #' Bird <- extend(Animal, "Bird", can_fly = lgl[1])
 #'
 #' tweety <- Bird(name = "Tweety", legs = 2, can_fly = TRUE)
@@ -406,7 +432,7 @@ extend <- function(.parent, ...) {
   added <- lapply(args[nms != ""], as_type)
   fields[names(added)] <- added # a child may retype a parent's field
   do.call(
-    model,
+    struct,
     c(
       list(name),
       fields,
@@ -415,19 +441,19 @@ extend <- function(.parent, ...) {
   )
 }
 
-#' Make every field of a model optional
+#' Make every field of a struct optional
 #'
 #' For PATCH-shaped input, where only the supplied keys mean anything. Defaults
 #' are dropped as well as requirements, so "not supplied" stays distinguishable
 #' from "set to the default".
 #'
-#' @param .parent The model to weaken.
-#' @param .name The new model's name.
-#' @return A constructor of class `typed_model`.
+#' @param .parent The struct to weaken.
+#' @param .name The new struct's name.
+#' @return A constructor of class `typed_struct`.
 #' @export
-#' @seealso [model()], [extend()]
+#' @seealso [struct()], [extend()]
 #' @examples
-#' Post <- model("Post", title = chr[1], body = chr[1], draft = lgl[1] %default% TRUE)
+#' Post <- struct("Post", title = chr[1], body = chr[1], draft = lgl[1] %default% TRUE)
 #' PostPatch <- partial(Post)
 #' PostPatch
 #'
@@ -442,21 +468,21 @@ partial <- function(.parent, .name = paste0("Partial", .spec(.parent)$name)) {
     s$default <- NULL
     .rebuild(s) | NULL
   })
-  do.call(model, c(list(.name), fields))
+  do.call(struct, c(list(.name), fields))
 }
 
-#' Print a model
+#' Print a struct
 #'
-#' @param x A model.
+#' @param x A struct.
 #' @param ... Ignored.
 #' @return `x`, invisibly.
 #' @export
 #' @examples
-#' print(model("PrintDemo", id = int[1], tag = chr[1] %default% "none"))
-print.typed_model <- function(x, ...) {
+#' print(struct("PrintDemo", id = int[1], tag = chr[1] %default% "none"))
+print.typed_struct <- function(x, ...) {
   s <- .spec(x)
   w <- max(nchar(names(s$fields)))
-  cat("<model> ", s$name, "\n", sep = "")
+  cat("<struct> ", s$name, "\n", sep = "")
   for (n in names(s$fields)) {
     f <- .spec(s$fields[[n]])
     cat(
@@ -501,7 +527,7 @@ print.typed_model <- function(x, ...) {
 #' @return `x`, invisibly.
 #' @export
 #' @examples
-#' Box <- model("Box", label = chr[1], items = list_of(chr[1]))
+#' Box <- struct("Box", label = chr[1], items = list_of(chr[1]))
 #' print(Box(label = "tools", items = list("hammer", "nail")))
 print.typed_instance <- function(x, ...) {
   f <- fields(x)

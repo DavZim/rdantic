@@ -16,7 +16,7 @@ The value of \code{expr}.
 }
 \description{
 Establishes the validation context and restores whatever was there before,
-so nested entries (a model inside a \code{from_json()}) keep the outer settings.
+so nested entries (a struct inside a \code{from_json()}) keep the outer settings.
 }
 \examples{
 rdantic:::.entry(rdantic:::.strict())

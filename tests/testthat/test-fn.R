@@ -35,8 +35,8 @@ test_that("a typed ... is checked element by element", {
   expect_identical(problem_paths(h(1L, tag = 2)), "tag")
 })
 
-test_that("models work as argument and return types", {
-  Item <- model("FnItem", qty = int[1][. > 0], price = num[1][. >= 0])
+test_that("structs work as argument and return types", {
+  Item <- struct("FnItem", qty = int[1][. > 0], price = num[1][. >= 0])
   total <- fn(i = Item, ~ num[1][. >= 0], { i$qty * i$price })
   expect_identical(total(Item(qty = 2, price = 1.5)), 3)
   expect_identical(problem_paths(total(list(qty = 0, price = 1.5))), "i$qty")

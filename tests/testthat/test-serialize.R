@@ -1,5 +1,5 @@
-mk_json_model <- function() {
-  model(
+mk_json_struct <- function() {
+  struct(
     "JDoc",
     id = int[1],
     tags = chr,
@@ -9,7 +9,7 @@ mk_json_model <- function() {
 }
 
 mk_doc <- function() {
-  mk_json_model()(
+  mk_json_struct()(
     id = 1,
     tags = "a",
     when = as.Date("2024-01-01"),
@@ -18,8 +18,8 @@ mk_doc <- function() {
 }
 
 test_that("to_list unwraps nested instances", {
-  Pin <- model("JPin", lat = num[1], lon = num[1])
-  Trip <- model("JTrip", from = Pin, to = Pin)
+  Pin <- struct("JPin", lat = num[1], lon = num[1])
+  Trip <- struct("JTrip", from = Pin, to = Pin)
   out <- to_list(Trip(from = Pin(lat = 1, lon = 2), to = Pin(lat = 3, lon = 4)))
   expect_identical(out, list(from = list(lat = 1, lon = 2), to = list(lat = 3, lon = 4)))
   expect_identical(as.list(Pin(lat = 1, lon = 2)), list(lat = 1, lon = 2))
@@ -41,7 +41,7 @@ test_that("a keyed list serialises as an object with per-key types", {
 })
 
 test_that("JSON round trips through the declared types", {
-  M <- mk_json_model()
+  M <- mk_json_struct()
   doc <- M(
     id = 1,
     tags = "a",
@@ -63,7 +63,7 @@ test_that("a JSON object with arbitrary keys is a named list", {
 })
 
 test_that("bad JSON is reported with paths", {
-  U <- model("JUser", id = int[1], name = chr[1])
+  U <- struct("JUser", id = int[1], name = chr[1])
   expect_identical(
     problem_paths(from_json(U, '{"id": 1.5, "name": ["a", "b"]}')),
     c("$id", "$name")
@@ -71,14 +71,14 @@ test_that("bad JSON is reported with paths", {
 })
 
 test_that("to_json can serialise a schema", {
-  txt <- as.character(to_json(schema(mk_json_model()), pretty = FALSE))
+  txt <- as.character(to_json(schema(mk_json_struct()), pretty = FALSE))
   expect_match(txt, '"title":"JDoc"', fixed = TRUE)
   expect_match(txt, '"required"', fixed = TRUE)
 })
 
 test_that("a serialised instance uses its own spec, not the registry", {
-  M <- model("JDrift", a = int[1])
+  M <- struct("JDrift", a = int[1])
   m <- M(a = 1)
-  suppressWarnings(model("JDrift", a = chr[1]))
+  suppressWarnings(struct("JDrift", a = chr[1]))
   expect_identical(as.character(to_json(m, pretty = FALSE)), '{"a":1}')
 })

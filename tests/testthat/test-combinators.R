@@ -70,3 +70,25 @@ test_that("a default on either side belongs to the whole union", {
   expect_true(isTRUE(rdantic:::.spec(t)$has_default))
   expect_null(rdantic:::.spec(t)$default)
 })
+
+test_that("desc()/%doc% attach a schema description", {
+  expect_identical(schema(desc(chr[1], "a name"))$description, "a name")
+  expect_identical(schema(chr[1] %doc% "a name")$description, "a name")
+  expect_error(chr[1] %doc% c("a", "b"))
+})
+
+test_that("desc() replaces, rather than duplicates, .refined()'s description", {
+  s <- schema(num[. > 0] %doc% "must be positive")
+  expect_identical(s$description, "must be positive")
+  expect_length(s$description, 1)
+})
+
+test_that("union schema compacts to a type array when every member is a bare scalar", {
+  expect_identical(schema(opt(chr[1]))$type, c("string", "null"))
+  expect_null(schema(opt(chr[1]))$anyOf)
+})
+
+test_that("union schema falls back to anyOf for structured members", {
+  s <- schema(chr | NULL)
+  expect_identical(s$anyOf, list(list(type = "array", items = list(type = "string")), list(type = "null")))
+})

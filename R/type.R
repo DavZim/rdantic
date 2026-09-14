@@ -48,21 +48,21 @@ new_type <- function(name, validate, schema = function() list(), ...) {
 #'
 #' @param spec A spec list, usually one that came out of [.spec()] with an
 #'   entry added or removed.
-#' @return A type (or a model constructor, if the spec has fields).
+#' @return A type (or a struct constructor, if the spec has fields).
 #' @keywords internal
 #' @examples
 #' s <- rdantic:::.spec(int)
 #' s$name <- "whole_number"
 #' rdantic:::.rebuild(s)
 .rebuild <- function(spec)
-  if (!is.null(spec$fields)) .make_model(spec) else do.call(new_type, spec)
+  if (!is.null(spec$fields)) .make_struct(spec) else do.call(new_type, spec)
 
 #' Interpret a value as a type
 #'
 #' Types are values, so most of the API accepts either a type, `NULL` (meaning
-#' the null type) or a string (meaning a model looked up by name).
+#' the null type) or a string (meaning a struct looked up by name).
 #'
-#' @param x A type, `NULL`, or a model name.
+#' @param x A type, `NULL`, or a struct name.
 #' @return A type.
 #' @export
 #' @examples

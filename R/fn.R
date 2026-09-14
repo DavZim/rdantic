@@ -103,9 +103,9 @@
 #' log_line("info", "disk", "full")
 #' try(log_line("debug", "disk", 3))
 #'
-#' # models are types, so they work here as well
+#' # structs are types, so they work here as well
 #' Money <- num[1][. >= 0]
-#' Item <- model("Item", qty = int[1][. > 0], price = Money)
+#' Item <- struct("Item", qty = int[1][. > 0], price = Money)
 #' total <- fn(i = Item, ~ Money, { i$qty * i$price })
 #' total(Item(qty = 3, price = 19.99))
 #' try(total(list(qty = 0, price = 19.99)))

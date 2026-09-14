@@ -18,5 +18,5 @@ A named list.
 Convert an instance to a list
 }
 \examples{
-as.list(model("Rgb", r = int[1], g = int[1], b = int[1])(r = 1, g = 2, b = 3))
+as.list(struct("Rgb", r = int[1], g = int[1], b = int[1])(r = 1, g = 2, b = 3))
 }

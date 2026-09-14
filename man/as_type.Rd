@@ -7,14 +7,14 @@
 as_type(x)
 }
 \arguments{
-\item{x}{A type, \code{NULL}, or a model name.}
+\item{x}{A type, \code{NULL}, or a struct name.}
 }
 \value{
 A type.
 }
 \description{
 Types are values, so most of the API accepts either a type, \code{NULL} (meaning
-the null type) or a string (meaning a model looked up by name).
+the null type) or a string (meaning a struct looked up by name).
 }
 \examples{
 as_type(int)

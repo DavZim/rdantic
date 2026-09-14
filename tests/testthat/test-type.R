@@ -17,7 +17,7 @@ test_that("try_parse reports instead of throwing", {
 })
 
 test_that("try_parse also catches type-level errors", {
-  r <- try_parse(ref("NeverDefinedModel"), list())
+  r <- try_parse(ref("NeverDefinedStruct"), list())
   expect_false(r$ok)
 })
 
@@ -27,7 +27,7 @@ test_that("is_valid is the predicate form", {
   expect_true(is_valid(chr, letters))
 })
 
-test_that("as_type accepts types, NULL and model names", {
+test_that("as_type accepts types, NULL and struct names", {
   expect_identical(as_type(int), int)
   expect_identical(rdantic:::.spec(as_type(NULL))$name, "NULL")
   expect_identical(rdantic:::.spec(as_type("Whatever"))$name, "Whatever")

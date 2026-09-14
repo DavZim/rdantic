@@ -25,7 +25,7 @@ arbitrary keys parses into.
 \code{list_of(a = T, b = T)} is the opposite: a fixed key set with one rule per
 key, still a plain named list on the way out. Missing keys are reported,
 \verb{\%default\%} fills them in, and \code{.extra = "forbid"} refuses unknown ones.
-Reach for \code{\link[=model]{model()}} when the record deserves a name, a class and
+Reach for \code{\link[=struct]{struct()}} when the record deserves a name, a class and
 inheritance.
 }
 \examples{
@@ -45,5 +45,5 @@ list_of(cpu = int[1], .extra = "forbid")
 schema(limits)
 }
 \seealso{
-\code{\link[=frame]{frame()}} for a data frame, \code{\link[=model]{model()}} for a named record.
+\code{\link[=frame]{frame()}} for a data frame, \code{\link[=struct]{struct()}} for a named record.
 }

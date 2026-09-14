@@ -1,6 +1,6 @@
 #' Validate a set of named, typed fields
 #'
-#' Record semantics, shared by `list_of(a = T, ...)` and [model()]: one type per
+#' Record semantics, shared by `list_of(a = T, ...)` and [struct()]: one type per
 #' key, defaults filled in, missing keys reported, unknown keys ignored or
 #' refused. Every problem is collected, not just the first.
 #'
@@ -76,7 +76,7 @@
 #' `list_of(a = T, b = T)` is the opposite: a fixed key set with one rule per
 #' key, still a plain named list on the way out. Missing keys are reported,
 #' `%default%` fills them in, and `.extra = "forbid"` refuses unknown ones.
-#' Reach for [model()] when the record deserves a name, a class and
+#' Reach for [struct()] when the record deserves a name, a class and
 #' inheritance.
 #'
 #' @param ... One element type, or named keys with one type each.
@@ -84,7 +84,7 @@
 #'   declared. Only meaningful for the keyed form.
 #' @return A type.
 #' @export
-#' @seealso [frame()] for a data frame, [model()] for a named record.
+#' @seealso [frame()] for a data frame, [struct()] for a named record.
 #' @examples
 #' # a map: any keys, one value type
 #' budget <- list_of(int[1][. > 0])

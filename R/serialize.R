@@ -1,13 +1,13 @@
 #' Convert an instance to plain lists
 #'
-#' Recursively, so nested models come back as nested named lists.
+#' Recursively, so nested structs come back as nested named lists.
 #'
 #' @param x An instance, a list, or any other value.
 #' @return The same shape with every instance replaced by a named list.
 #' @export
 #' @examples
-#' Pin <- model("Pin", lat = num[1], lon = num[1])
-#' Trip <- model("Trip", from = Pin, to = Pin)
+#' Pin <- struct("Pin", lat = num[1], lon = num[1])
+#' Trip <- struct("Trip", from = Pin, to = Pin)
 #' str(to_list(Trip(from = Pin(lat = 1, lon = 2), to = Pin(lat = 3, lon = 4))))
 to_list <- function(x) {
   if (inherits(x, "typed_instance"))
@@ -24,7 +24,7 @@ to_list <- function(x) {
 #' @return A named list.
 #' @export
 #' @examples
-#' as.list(model("Rgb", r = int[1], g = int[1], b = int[1])(r = 1, g = 2, b = 3))
+#' as.list(struct("Rgb", r = int[1], g = int[1], b = int[1])(r = 1, g = 2, b = 3))
 as.list.typed_instance <- function(x, ...) to_list(x)
 
 #' Require jsonlite
@@ -50,7 +50,7 @@ as.list.typed_instance <- function(x, ...) to_list(x)
 #' @export
 #' @seealso [from_json()], [schema()]
 #' @examples
-#' Tagged <- model("Tagged", id = int[1], tags = chr, seen = date[1] | NULL)
+#' Tagged <- struct("Tagged", id = int[1], tags = chr, seen = date[1] | NULL)
 #' to_json(Tagged(id = 3, tags = "cobol"))
 #' to_json(Tagged(id = 3, tags = c("a", "b"), seen = as.Date("2024-01-01")))
 #' to_json(schema(Tagged))
@@ -134,7 +134,7 @@ to_json <- function(x, pretty = TRUE, ...) {
 #' @export
 #' @seealso [to_json()], [from_list()], [try_parse()]
 #' @examples
-#' Reading <- model("Reading", station = chr[1], celsius = num[1], at = datetime[1])
+#' Reading <- struct("Reading", station = chr[1], celsius = num[1], at = datetime[1])
 #' from_json(Reading, '{"station": "KOA", "celsius": 21.5, "at": "2024-05-17T09:30:00"}')
 #'
 #' from_json(list_of(int[1]), '{"cpu": 4, "memory": 16}')

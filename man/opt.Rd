@@ -7,7 +7,7 @@
 opt(t)
 }
 \arguments{
-\item{t}{A type, or a model name.}
+\item{t}{A type, or a struct name.}
 }
 \value{
 A type.

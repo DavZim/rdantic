@@ -13,10 +13,10 @@ to_list(x)
 The same shape with every instance replaced by a named list.
 }
 \description{
-Recursively, so nested models come back as nested named lists.
+Recursively, so nested structs come back as nested named lists.
 }
 \examples{
-Pin <- model("Pin", lat = num[1], lon = num[1])
-Trip <- model("Trip", from = Pin, to = Pin)
+Pin <- struct("Pin", lat = num[1], lon = num[1])
+Trip <- struct("Trip", from = Pin, to = Pin)
 str(to_list(Trip(from = Pin(lat = 1, lon = 2), to = Pin(lat = 3, lon = 4))))
 }

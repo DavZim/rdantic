@@ -1,5 +1,5 @@
 mk_user <- function() {
-  model("TUser", id = int[1], name = chr[1], tags = chr %default% character())
+  struct("TUser", id = int[1], name = chr[1], tags = chr %default% character())
 }
 
 test_that("a constructor validates and coerces", {
@@ -31,7 +31,11 @@ test_that("instances survive a saveRDS round trip", {
   f <- tempfile()
   on.exit(unlink(f))
   saveRDS(a, f)
-  expect_identical(readRDS(f), a)
+  b <- readRDS(f)
+  # the spec attribute is an environment: same content, but not the same
+  # object once deserialised, so compare structurally rather than raw identity
+  expect_identical(class(b), class(a))
+  expect_identical(as.list(b), as.list(a))
 })
 
 test_that("assignment runs the field's type", {
@@ -56,27 +60,27 @@ test_that("reading a field does not partially match", {
   expect_identical(a[["name"]], "Ada")
 })
 
-test_that("a different model is not parsed as this one", {
+test_that("a different struct is not parsed as this one", {
   U <- mk_user()
   a <- U(id = 1, name = "Ada")
-  V <- model("TOther", id = int[1], name = chr[1])
+  V <- struct("TOther", id = int[1], name = chr[1])
   expect_length(problem_paths(parse_as(V, a)), 1)
 })
 
-test_that("a plain list is parsed where a model is expected", {
+test_that("a plain list is parsed where a struct is expected", {
   U <- mk_user()
   expect_identical(from_list(U, list(id = 2, name = "Bob"))$id, 2L)
   expect_identical(from_list(U, list(id = 2, name = "Bob", z = 1))$id, 2L)
 })
 
-test_that("a model can forbid unknown keys", {
-  S <- model("TShut", x = int[1], .extra = "forbid")
+test_that("a struct can forbid unknown keys", {
+  S <- struct("TShut", x = int[1], .extra = "forbid")
   expect_identical(problem_paths(from_list(S, list(x = 1, y = 2))), "$y")
 })
 
-test_that("models nest and report the full path", {
+test_that("structs nest and report the full path", {
   U <- mk_user()
-  Team <- model("TTeam", lead = U, roster = frame(id = int, name = chr))
+  Team <- struct("TTeam", lead = U, roster = frame(id = int, name = chr))
   bad <- problem_paths(Team(
     lead = list(id = 1, name = 42),
     roster = data.frame(id = c(1, 2.5), name = c("a", "b"))
@@ -114,7 +118,7 @@ test_that("partial makes every field optional and drops defaults", {
 })
 
 test_that("a self-reference resolves through the registry", {
-  Node <- model("TNode", value = int[1], nxt = opt("TNode"))
+  Node <- struct("TNode", value = int[1], nxt = opt("TNode"))
   n <- Node(value = 1, nxt = list(value = 2))
   expect_identical(n$nxt$value, 2L)
 })
@@ -123,12 +127,40 @@ test_that("an unresolvable reference is a typed error", {
   expect_error(parse_as(ref("TNeverDefined"), list()), class = "typed_error")
 })
 
-test_that("redefining a model warns", {
-  model("TDrift", a = int[1])
-  expect_warning(model("TDrift", a = chr[1]), "redefined")
+test_that("redefining a struct warns", {
+  struct("TDrift", a = int[1])
+  expect_warning(struct("TDrift", a = chr[1]), "redefined")
 })
 
 test_that("printing shows the fields", {
-  expect_output(print(mk_user()), "<model> TUser", fixed = TRUE)
+  expect_output(print(mk_user()), "<struct> TUser", fixed = TRUE)
   expect_output(print(mk_user()(id = 1, name = "Ada")), "<TUser>", fixed = TRUE)
+})
+
+test_that("struct(.description = ) sets the schema's top-level description", {
+  U <- struct("TDescribed", .description = "A described struct.", a = int[1])
+  expect_identical(schema(U)$description, "A described struct.")
+  expect_error(struct("TBadDesc", .description = c("a", "b"), a = int[1]))
+})
+
+test_that("field descriptions and .description reproduce the target schema shape", {
+  Person <- struct(
+    "TPerson",
+    .description = "A person record.",
+    name = chr[1] %doc% "Full name of the person.",
+    age = int[1] %doc% "Age in years.",
+    occupation = opt(chr[1]) %doc% "Current job title, or null if unknown.",
+    is_active = lgl[1] %doc% "Whether the account is currently active."
+  )
+  s <- schema(Person)
+  expect_identical(s$description, "A person record.")
+  expect_identical(s$properties$name, list(type = "string", description = "Full name of the person."))
+  expect_identical(s$properties$age, list(type = "integer", description = "Age in years."))
+  expect_identical(
+    s$properties$occupation,
+    list(type = c("string", "null"), description = "Current job title, or null if unknown.")
+  )
+  expect_identical(s$properties$is_active, list(type = "boolean", description = "Whether the account is currently active."))
+  expect_identical(s$required, as.list(c("name", "age", "is_active")))
+  expect_false(s$additionalProperties)
 })

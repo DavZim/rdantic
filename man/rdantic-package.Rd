@@ -18,7 +18,7 @@ Types are ordinary values built from operators R already has:
 \item \code{T[n]} and \code{T[. > 0]} -- length and constraints, see [\verb{[.type}]
 \item \code{A | B}, \code{\link[=opt]{opt()}}, \code{\link[=no_na]{no_na()}}, \code{\link[=one_of]{one_of()}}, \verb{\%default\%}
 \item \code{\link[=list_of]{list_of()}} and \code{\link[=frame]{frame()}} -- lists, maps and data frames
-\item \code{\link[=model]{model()}}, \code{\link[=extend]{extend()}}, \code{\link[=partial]{partial()}} -- records
+\item \code{\link[=struct]{struct()}}, \code{\link[=extend]{extend()}}, \code{\link[=partial]{partial()}} -- records
 \item \code{\link[=fn]{fn()}} -- typed functions
 \item \code{\link[=parse_as]{parse_as()}}, \code{\link[=try_parse]{try_parse()}}, \code{\link[=from_json]{from_json()}}, \code{\link[=to_json]{to_json()}}, \code{\link[=schema]{schema()}}
 }
@@ -30,7 +30,7 @@ R type. \code{rdantic.check} set to \code{FALSE} skips the checks in \code{\link
 }
 
 \examples{
-Order <- model("Order",
+Order <- struct("Order",
   id         = int[1][. > 0],
   qty        = int[1][. > 0],
   unit_price = num[1][. >= 0],

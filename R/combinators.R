@@ -189,7 +189,7 @@ Ops.type <- function(e1, e2) {
             r <- .spec(m)$validate(x, path)
             if (!.is_bad(r)) return(r)
             hints <- c(hints, .hints_of(r))
-            # remember the first member that got *inside* the value (e.g. a model
+            # remember the first member that got *inside* the value (e.g. a struct
             # parsing a list) so its precise problems are reported instead of
             # a generic "expected A | B"
             if (
@@ -206,8 +206,20 @@ Ops.type <- function(e1, e2) {
           hints <- unique(hints)
           .bad(path, name, .got(x), if (length(hints) == 1) hints)
         },
-        schema = function()
-          list(anyOf = lapply(members, function(m) .spec(m)$schema())),
+        schema = function() {
+          member_schemas <- lapply(members, function(m) .spec(m)$schema())
+          # a union of bare scalar types (e.g. T | NULL) reads as one "type" array;
+          # anything with structure (items, properties, enum, $ref, ...) needs anyOf
+          simple <- vapply(
+            member_schemas,
+            function(s) identical(names(s), "type") && is.character(s$type) &&
+              length(s$type) == 1,
+            NA
+          )
+          if (all(simple))
+            list(type = vapply(member_schemas, `[[`, "", "type")) else
+            list(anyOf = member_schemas)
+        },
         members = members,
         scalar = scalar
       ),
@@ -234,7 +246,7 @@ Ops.type <- function(e1, e2) {
 #' Shorthand for `T | NULL`, and the readable way to write a self-reference or
 #' a forward reference by name.
 #'
-#' @param t A type, or a model name.
+#' @param t A type, or a struct name.
 #' @return A type.
 #' @export
 #' @examples
@@ -349,7 +361,7 @@ one_of <- function(...) {
 #' Attach a default to a type
 #'
 #' The default is validated immediately, so a wrong default is an error where
-#' it is written rather than where it is used. Model fields and [fn()]
+#' it is written rather than where it is used. Struct fields and [fn()]
 #' arguments fall back to it when no value is supplied.
 #'
 #' @param t A type, or anything [as_type()] accepts.
@@ -360,7 +372,7 @@ one_of <- function(...) {
 #' role <- one_of("admin", "user") %default% "user"
 #' role
 #'
-#' Cfg <- model("Cfg", retries = int[1] %default% 3L, tag = chr[1] | NULL)
+#' Cfg <- struct("Cfg", retries = int[1] %default% 3L, tag = chr[1] | NULL)
 #' Cfg()$retries
 #'
 #' try(int[1] %default% "three")
@@ -371,3 +383,44 @@ one_of <- function(...) {
   s$has_default <- TRUE
   .rebuild(s)
 }
+
+#' Attach a description to a type's schema
+#'
+#' The description is what [schema()] puts under the JSON Schema
+#' `"description"` key -- the pydantic-style docstring for a field. It must be
+#' the outermost wrapper in a chain (applied after `[n]`, `[expr]`, `opt()`/
+#' `|` and `%default%`), the same implicit rule `%default%` already has,
+#' because an outer combinator builds its own schema fragment and would
+#' otherwise discard it. A description added this way replaces, rather than
+#' duplicates, one [.refined()] wrote automatically.
+#'
+#' A struct's own top-level description is set with `struct(.description = )`
+#' instead: `desc()` on a whole struct builds a new, unregistered constructor,
+#' so a [ref()] to that struct's name would still see the undescribed one.
+#'
+#' @param t A type, or anything [as_type()] accepts.
+#' @param description A single string.
+#' @return A type carrying the description.
+#' @export
+#' @examples
+#' age <- int[1][. > 0] %doc% "Age in years."
+#' schema(age)$description
+#'
+#' Person <- struct("Person",
+#'   name = chr[1] %doc% "Full name of the person.",
+#'   occupation = opt(chr[1]) %doc% "Current job title, or null if unknown."
+#' )
+#' schema(Person)$properties$occupation
+desc <- function(t, description) {
+  t <- as_type(t)
+  if (!is.character(description) || length(description) != 1 || is.na(description))
+    stop("desc() needs a single string description")
+  s <- .spec(t)
+  inner_schema <- s$schema
+  s$schema <- function() modifyList(inner_schema(), list(description = description))
+  .rebuild(s)
+}
+
+#' @rdname desc
+#' @export
+`%doc%` <- function(t, description) desc(t, description)

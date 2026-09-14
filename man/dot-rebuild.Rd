@@ -11,7 +11,7 @@
 entry added or removed.}
 }
 \value{
-A type (or a model constructor, if the spec has fields).
+A type (or a struct constructor, if the spec has fields).
 }
 \description{
 Rebuild a type from a modified spec

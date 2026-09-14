@@ -17,6 +17,6 @@ Used for things like an unresolvable \code{\link[=ref]{ref()}}, which must still
 as \code{typed_error} rather than escaping as a bare \code{simpleError}.
 }
 \examples{
-try(rdantic:::.abort_msg("unknown model `Nope`"))
+try(rdantic:::.abort_msg("unknown struct `Nope`"))
 }
 \keyword{internal}

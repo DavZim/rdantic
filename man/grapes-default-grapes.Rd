@@ -16,14 +16,14 @@ A type carrying the default.
 }
 \description{
 The default is validated immediately, so a wrong default is an error where
-it is written rather than where it is used. Model fields and \code{\link[=fn]{fn()}}
+it is written rather than where it is used. Struct fields and \code{\link[=fn]{fn()}}
 arguments fall back to it when no value is supplied.
 }
 \examples{
 role <- one_of("admin", "user") \%default\% "user"
 role
 
-Cfg <- model("Cfg", retries = int[1] \%default\% 3L, tag = chr[1] | NULL)
+Cfg <- struct("Cfg", retries = int[1] \%default\% 3L, tag = chr[1] | NULL)
 Cfg()$retries
 
 try(int[1] \%default\% "three")

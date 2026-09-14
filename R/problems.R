@@ -81,7 +81,7 @@
 #' Run one top-level validation
 #'
 #' Establishes the validation context and restores whatever was there before,
-#' so nested entries (a model inside a `from_json()`) keep the outer settings.
+#' so nested entries (a struct inside a `from_json()`) keep the outer settings.
 #'
 #' @param expr The validation to run. Evaluated in the caller's frame.
 #' @param parsing Whether the input came from JSON or a plain list.
@@ -220,7 +220,7 @@ type_of <- function(x) {
 #' @return Nothing; throws a condition of class `typed_error`.
 #' @keywords internal
 #' @examples
-#' try(rdantic:::.abort_msg("unknown model `Nope`"))
+#' try(rdantic:::.abort_msg("unknown struct `Nope`"))
 .abort_msg <- function(msg)
   stop(structure(
     class = c("typed_error", "error", "condition"),

@@ -11,7 +11,7 @@
 #' * `T[n]` and `T[. > 0]` -- length and constraints, see [`[.type`]
 #' * `A | B`, [opt()], [no_na()], [one_of()], `%default%`
 #' * [list_of()] and [frame()] -- lists, maps and data frames
-#' * [model()], [extend()], [partial()] -- records
+#' * [struct()], [extend()], [partial()] -- records
 #' * [fn()] -- typed functions
 #' * [parse_as()], [try_parse()], [from_json()], [to_json()], [schema()]
 #'
@@ -20,7 +20,7 @@
 #' R type. `rdantic.check` set to `FALSE` skips the checks in [fn()].
 #'
 #' @examples
-#' Order <- model("Order",
+#' Order <- struct("Order",
 #'   id         = int[1][. > 0],
 #'   qty        = int[1][. > 0],
 #'   unit_price = num[1][. >= 0],

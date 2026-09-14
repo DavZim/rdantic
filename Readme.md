@@ -1,30 +1,146 @@
 # rdantic
 
 
-- [Motivation](#motivation)
-- [Types](#types)
-- [Length](#length)
-- [Constraints](#constraints)
-- [Unions, optionals, defaults](#unions-optionals-defaults)
-- [Dates, factors, missing values](#dates-factors-missing-values)
-- [Named lists](#named-lists)
-- [Records: `model()`](#records-model)
-- [Nesting, and errors that report
-  everything](#nesting-and-errors-that-report-everything)
-- [Inheritance, partials, unknown
-  fields](#inheritance-partials-unknown-fields)
-- [Typed functions: `fn()`](#typed-functions-fn)
-- [Composing typed functions](#composing-typed-functions)
-- [JSON and schema](#json-and-schema)
-- [Cheat sheet](#cheat-sheet)
-- [How it works](#how-it-works)
-- [Not in this proof of concept](#not-in-this-proof-of-concept)
+**Declared types, checked at the boundary.** pydantic’s idea, in base R.
 
-**Declared types, checked at the boundary.** pydantic’s idea, in one
-file of base R.
+> **Status: proof of concept.** No S4, no R6, no code generation —
+> closures, attributes and plain lists.
+
+> **Feedback wanted!**
+
+Concept by humans, implemented by AI.
 
 ``` r
-source("rdantic.R")   # base R only; jsonlite is needed for the JSON helpers
+library(rdantic)   # base R only; jsonlite is needed for the JSON helpers
+```
+
+## TL;DR
+
+``` r
+# define a struct with typed fields, optional fields, defaults and descriptions
+User <- struct(
+  .name = "User",
+  .description = "A registered user.",
+  id   = int[1][. > 0] %doc% "Unique, positive identifier.",
+  name = chr[1] %doc% "Full name.",
+  role = one_of("admin", "user") %default% "user" %doc% "Access level.",
+  age  = (int[1] | NULL) %doc% "Age in years, if known."
+)
+User
+#> <struct> User
+#>   id   : int[1][. > 0]
+#>   name : chr[1]
+#>   role : one_of("admin", "user") = "user"
+#>   age  : int[1] | NULL
+
+# create a new instance, validated and coerced
+ada <- User(id = 42, name = "Ada")
+
+str(ada, give.attr = FALSE) # the object is a plain list, but it carries its own spec
+#> List of 4
+#>  $ id  : int 42
+#>  $ name: chr "Ada"
+#>  $ role: chr "user"
+#>  $ age : NULL
+
+# wrong id type, no implicit conversion
+wrong <- User(id = "42", name = "Ada")
+#> Error:
+#> ! 1 validation problem in User
+#>   $id  expected int[1][. > 0], got chr[1] "42"  -- strings are never parsed implicitly
+
+to_json(schema(User))                     # descriptions land in the schema, not just a comment
+#> {
+#>   "type": "object",
+#>   "title": "User",
+#>   "description": "A registered user.",
+#>   "properties": {
+#>     "id": {
+#>       "type": "integer",
+#>       "description": "Unique, positive identifier."
+#>     },
+#>     "name": {
+#>       "type": "string",
+#>       "description": "Full name."
+#>     },
+#>     "role": {
+#>       "enum": [
+#>         "admin",
+#>         "user"
+#>       ],
+#>       "description": "Access level."
+#>     },
+#>     "age": {
+#>       "type": ["integer", "null"],
+#>       "description": "Age in years, if known."
+#>     }
+#>   },
+#>   "required": [
+#>     "id",
+#>     "name"
+#>   ],
+#>   "additionalProperties": false
+#> }
+
+greet <- fn(u = User, ~ chr[1], { paste("Hi,", u$name) })
+
+greet(ada)                                # right: a real User
+#> [1] "Hi, Ada"
+greet(User(id = "1", name = "Ada"))       # wrong: every problem, with its path
+#> Error:
+#> ! 1 validation problem in User
+#>   $id  expected int[1][. > 0], got chr[1] "1"  -- strings are never parsed implicitly
+greet(User(id = 2, name = "Bob"))         # combined: build and call in one step
+#> [1] "Hi, Bob"
+
+greet_wrong <- fn(u = User, ~ chr[1], { paste0("Hi, ", u$name, "(", seq(u$id), ")") }) # wrong: return type is wrong
+greet_wrong(ada)
+#> Error:
+#> ! 1 validation problem in greet_wrong()
+#>   <return>  expected chr[1], got chr[42]  -- length is 42, not 1
+```
+
+Details about the types, structs, functions and JSON follow.
+
+``` r
+int[1][. > 0](5)                          # a type is a value: calling it validates + coerces
+#> [1] 5
+int[1][. > 0](-1)
+#> Error:
+#> ! 1 validation problem in int[1][. > 0]
+#>   <value>  expected int[1][. > 0], got num[1] -1
+```
+
+``` r
+ada$role                                  # "user" -- filled in by %default%
+#> [1] "user"
+ada$age <- "old"                          # instances stay valid: checked on assignment too
+#> Error:
+#> ! 1 validation problem in User
+#>   $age  expected int[1] | NULL, got chr[1] "old"  -- strings are never parsed implicitly
+```
+
+``` r
+budget <- list_of(int[1][. > 0])          # a map: any keys, one value type
+budget(list(cpu = 4, memory = 16))
+#> $cpu
+#> [1] 4
+#> 
+#> $memory
+#> [1] 16
+```
+
+``` r
+from_json(User, '{"id": 1, "name": "Ada"}')
+#> <User>
+#>   id   : 1L
+#>   name : "Ada"
+#>   role : "user"
+#>   age  : NULL
+from_json(User, '{"id": -1, "name": "Ada"}')  # JSON in, validated against the same declaration
+#> Error:
+#> ! 1 validation problem in User
+#>   $id  expected int[1][. > 0], got int[1] -1L
 ```
 
 |  |  |
@@ -33,11 +149,8 @@ source("rdantic.R")   # base R only; jsonlite is needed for the JSON helpers
 | **Length is part of the type** | `int` is any integer vector, `int[1]` is exactly one |
 | **Every problem, with a path** | not the first failure — all of them, each saying where |
 | **Lossless coercion only** | `1` → `1L` yes; `1.5` → `1L` no; `"1"` → `1L` never |
-| **Records and functions** | `model()` for validated objects, `fn()` for typed functions |
+| **Records and functions** | `struct()` for validated objects, `fn()` for typed functions |
 | **JSON in, JSON out** | `from_json()`, `to_json()`, `schema()` |
-
-> **Status: proof of concept.** No S4, no R6, no code generation —
-> closures, attributes and plain lists. **Feedback wanted!**
 
 ## Motivation
 
@@ -60,7 +173,7 @@ all along.
 Declare what the data *is*, once:
 
 ``` r
-Order <- model("Order",
+Order <- struct("Order",                  # name, then one `field = type` per column
   id         = int[1][. > 0],
   qty        = int[1][. > 0],
   unit_price = num[1][. >= 0],
@@ -98,7 +211,7 @@ order$qty <- 0
 #> ! 1 validation problem in Order
 #>   $qty  expected int[1][. > 0], got num[1] 0
 
-net <- fn(o = Order, ~ num[1][. >= 0], {
+net <- fn(o = Order, ~ num[1][. >= 0], {  # arg = type, ..., ~ return type, then the body
   o$qty * o$unit_price * (1 - o$coupon)
 })
 net(order)
@@ -108,6 +221,58 @@ net(payload)
 #> ! 2 validation problems in net()
 #>   o$id      expected int[1][. > 0], got chr[1] "1042"  -- strings are never parsed implicitly
 #>   o$coupon  expected num[1][0 <= . & . <= 1], got num[1] 1.2
+```
+
+The same declaration is also a contract with a model you don’t control.
+Structured-output APIs want a JSON Schema up front, and whatever they
+hand back still has to be checked before you trust it — normally two
+artifacts, written by hand, free to drift apart.
+
+``` r
+Extraction <- struct("Extraction",
+  name = chr[1],
+  age  = int[1][. > 0],
+  tags = list_of(chr[1])                  # list_of(T): a list of any length, all elements T
+)
+
+to_json(schema(Extraction))               # schema(T) builds a JSON Schema; to_json() serializes it
+#> {
+#>   "type": "object",
+#>   "title": "Extraction",
+#>   "properties": {
+#>     "name": {
+#>       "type": "string"
+#>     },
+#>     "age": {
+#>       "type": "integer",
+#>       "description": "satisfies . > 0"
+#>     },
+#>     "tags": {
+#>       "type": "array",
+#>       "items": {
+#>         "type": "string"
+#>       }
+#>     }
+#>   },
+#>   "required": [
+#>     "name",
+#>     "age",
+#>     "tags"
+#>   ],
+#>   "additionalProperties": false
+#> }
+```
+
+Send that schema as the response format; whatever comes back goes
+through `from_json()` — one declaration on both ends, so a reply that
+ignores the schema is still caught.
+
+``` r
+reply <- '{"name": "Ada", "age": -1, "tags": ["r", "stats"]}'
+from_json(Extraction, reply)              # from_json(T, txt): parse JSON text, validate against T
+#> Error:
+#> ! 1 validation problem in Extraction
+#>   $age  expected int[1][. > 0], got int[1] -1L
 ```
 
 That is the whole idea. The rest of this document is that idea applied
@@ -134,17 +299,17 @@ num[. > 0]
 #> <type> num[. > 0]
 chr[1] | NULL
 #> <type> chr[1] | NULL
-no_na(num)
+no_na(num)                                # no_na(T): T, but NA is rejected
 #> <type> no_na(num)
-one_of("low", "mid", "high")
+one_of("low", "mid", "high")              # one_of(...): an enum of these exact values
 #> <type> one_of("low", "mid", "high")
-fct("low", "mid", "high")
+fct("low", "mid", "high")                 # fct(...): a factor restricted to these levels
 #> <type> fct("low", "mid", "high")
-list_of(int[1])
+list_of(int[1])                           # list_of(T): a list of any length, all elements T
 #> <type> list_of(int[1])
-list_of(cpu = int[1], memory = int[1])
+list_of(cpu = int[1], memory = int[1])    # list_of(a = T, b = T, ...): fixed keys, one type each
 #> <type> list_of(cpu, memory)
-frame(id = int, label = chr)
+frame(id = int, label = chr)              # frame(col = T, ...): a data.frame with typed columns
 #> <type> frame(id, label)
 ```
 
@@ -248,8 +413,8 @@ error tells the reader the rule that was broken, not just that one was.
 ## Unions, optionals, defaults
 
 `A | B` accepts either. `T | NULL` is the idiom for optional.
-`%default%` attaches a default value, used by models and typed functions
-when a value is not supplied.
+`%default%` attaches a default value, used by structs and typed
+functions when a value is not supplied.
 
 ``` r
 (int[1] | chr[1])(7)
@@ -286,7 +451,7 @@ date("17/05/2024")
 num(Sys.Date())                           # ... but a Date is never silently a number
 #> Error:
 #> ! 1 validation problem in num
-#>   <value>  expected num, got date[1] "2026-09-11"  -- a <Date> is never silently unclassed
+#>   <value>  expected num, got date[1] "2026-09-14"  -- a <Date> is never silently unclassed
 fct("low", "high")("high")
 #> [1] high
 #> Levels: low high
@@ -300,6 +465,7 @@ When nothing built in fits, `type_from()` takes a plain predicate and an
 optional coercion:
 
 ``` r
+# type_from(name, predicate, coerce = NULL)
 hex <- type_from("hex", function(x) is.character(x) && all(grepl("^#[0-9a-f]{6}$", x)))
 hex("#00ff99")
 #> [1] "#00ff99"
@@ -316,7 +482,7 @@ Keys are kept, and a failure is reported by key rather than by position
 — this is what a JSON object with arbitrary keys parses into.
 
 ``` r
-budget <- list_of(cpu = int[1][. > 0], memory = int[1][. > 0])
+budget <- list_of(int[1][. > 0])
 
 budget(list(cpu = 4, memory = 16))
 #> $cpu
@@ -326,13 +492,14 @@ budget(list(cpu = 4, memory = 16))
 #> [1] 16
 budget(list(cpu = 4, memory = 0, disk = "big"))
 #> Error:
-#> ! 1 validation problem in list_of(cpu, memory)
+#> ! 2 validation problems in list_of(int[1][. > 0])
 #>   $memory  expected int[1][. > 0], got num[1] 0
+#>   $disk    expected int[1][. > 0], got chr[1] "big"  -- strings are never parsed implicitly
 ```
 
 Name the arguments instead and you get the opposite: a fixed key set
 with one rule per key — still a plain named list on the way out, with no
-class and no model name.
+class and no struct name.
 
 ``` r
 limits <- list_of(cpu = int[1][0 < . & . < 12], memory = int[1][0 < . & . < 128])
@@ -361,28 +528,28 @@ to_json(limits(list(cpu = 4L, memory = 16L)))
 
 Missing keys are reported, `%default%` fills them in, and
 `.extra = "forbid"` refuses unknown ones — the same record rules
-`model()` uses. Reach for a model when the record deserves a name, a
+`struct()` uses. Reach for a struct when the record deserves a name, a
 class and inheritance; reach for `list_of(a = T, ...)` when it is just a
 shape.
 
-## Records: `model()`
+## Records: `struct()`
 
-A model is a set of named, typed fields. `model()` returns a
-constructor, and that constructor is itself a type (so models nest and
+A struct is a set of named, typed fields. `struct()` returns a
+constructor, and that constructor is itself a type (so structs nest and
 can be used anywhere a type is).
 
 ``` r
-User <- model("User",
+User <- struct("User",
   id     = id_t,
   name   = chr[1],
   email  = email_t,
   age    = int[1] | NULL,
   role   = one_of("admin", "user") %default% "user",
   tags   = chr %default% character(),
-  friend = opt("User")                    # optional, refers to this model by name
+  friend = opt("User")                    # optional, refers to this struct by name
 )
 User
-#> <model> User
+#> <struct> User
 #>   id     : int[1][. > 0]
 #>   name   : chr[1]
 #>   email  : chr[1][grepl("@", ., fixed = TRUE)]
@@ -458,12 +625,12 @@ identical(ada, User(id = 1, name = "Ada", email = "ada@lovelace.org", age = 36L)
 
 ## Nesting, and errors that report everything
 
-Since a model is a type, models compose. Where a model is expected, a
+Since a struct is a type, structs compose. Where a struct is expected, a
 plain list is accepted and parsed — this is what makes JSON input work
 later.
 
 ``` r
-Team <- model("Team",
+Team <- struct("Team",
   lead    = User,
   members = list_of(User),
   roster  = frame(id = int, name = chr)
@@ -518,7 +685,7 @@ upload — use `try_parse()`, which returns the same records instead of
 throwing:
 
 ``` r
-r <- try_parse(User, list(id = 1.5, name = "Ada", email = "nope"))
+r <- try_parse(User, list(id = 1.5, name = "Ada", email = "nope"))  # (T, x): validate, don't throw
 r$ok
 #> [1] FALSE
 str(r$problems[[2]])
@@ -527,14 +694,14 @@ str(r$problems[[2]])
 #>  $ expected: chr "chr[1][grepl(\"@\", ., fixed = TRUE)]"
 #>  $ got     : chr "chr[1] \"nope\""
 #>  $ hint    : NULL
-is_valid(User, list(id = 1, name = "Ada", email = "a@b"))
+is_valid(User, list(id = 1, name = "Ada", email = "a@b"))            # (T, x): TRUE/FALSE, no detail
 #> [1] TRUE
 ```
 
 ## Inheritance, partials, unknown fields
 
 ``` r
-Admin <- extend(User, "Admin", permissions = list_of(chr[1]))
+Admin <- extend(User, "Admin", permissions = list_of(chr[1]))  # (Base, "Name", extra field = type, ...)
 root  <- Admin(id = 1, name = "root", email = "root@example.org",
                permissions = list("all"))
 inherits(root, "User")
@@ -555,11 +722,11 @@ UserPatch(name = "Grace")
 
 When parsing from a list, unknown keys are ignored by default (as in
 pydantic, and so that JSON written from a subclass still parses as the
-parent). A model can forbid them:
+parent). A struct can forbid them:
 
 ``` r
-Strict <- model("Strict", x = int[1], .extra = "forbid")
-from_list(Strict, list(x = 1, y = 2))
+Strict <- struct("Strict", x = int[1], .extra = "forbid")
+from_list(Strict, list(x = 1, y = 2))     # from_list(T, x): parse/validate a plain list as T
 #> Error:
 #> ! 1 validation problem in Strict
 #>   $y  expected <no such field>, got num[1] 2  -- did you mean `x`?
@@ -601,7 +768,7 @@ half(3)                                  # 1.5 is not an int
 ```
 
 Give `...` a type to check everything passed through it. Every bad
-argument is reported in one error, as with models:
+argument is reported in one error, as with structs:
 
 ``` r
 log_line <- fn(level = one_of("info", "warn"), ... = chr[1], ~ chr[1], {
@@ -757,14 +924,7 @@ to_json(schema(User))
 #>       "description": "satisfies grepl(\"@\", ., fixed = TRUE)"
 #>     },
 #>     "age": {
-#>       "anyOf": [
-#>         {
-#>           "type": "integer"
-#>         },
-#>         {
-#>           "type": "null"
-#>         }
-#>       ]
+#>       "type": ["integer", "null"]
 #>     },
 #>     "role": {
 #>       "enum": [
@@ -798,6 +958,57 @@ to_json(schema(User))
 #> }
 ```
 
+## Documenting a schema
+
+A description belongs in the schema itself, not beside it in a comment
+that can drift out of sync — this is what a structured-output model
+actually reads. There are two places to attach one: `desc()` (or its
+infix spelling `%doc%`) documents a single field’s type, and
+`struct(.description = )` documents the record as a whole.
+
+``` r
+Contact <- struct("Contact",
+  .description = "A single contact record.",
+  name  = chr[1] %doc% "Full name of the person.",  # T %doc% "text": attach a description
+  email = opt(chr[1]) %doc% "Email address, or null if unknown."
+)
+
+to_json(schema(Contact))
+#> {
+#>   "type": "object",
+#>   "title": "Contact",
+#>   "description": "A single contact record.",
+#>   "properties": {
+#>     "name": {
+#>       "type": "string",
+#>       "description": "Full name of the person."
+#>     },
+#>     "email": {
+#>       "type": ["string", "null"],
+#>       "description": "Email address, or null if unknown."
+#>     }
+#>   },
+#>   "required": [
+#>     "name"
+#>   ],
+#>   "additionalProperties": false
+#> }
+```
+
+`desc()`/`%doc%` wraps a type, so — like `%default%` — it must be the
+outermost part of the chain, applied after `[n]`, `[expr]`, `opt()`/`|`
+and `%default%`:
+
+``` r
+age <- int[1][. > 0] %doc% "Age in years, must be positive."
+schema(age)
+#> $type
+#> [1] "integer"
+#> 
+#> $description
+#> [1] "Age in years, must be positive."
+```
+
 ## Cheat sheet
 
 | Want | Write |
@@ -805,7 +1016,7 @@ to_json(schema(User))
 | integer / double / string / logical vector | `int`, `num`, `chr`, `lgl` |
 | exactly n elements | `T[n]` |
 | constraint | `T[. > 0]`, `chr[1][nchar(.) < 20]` |
-| optional | `T \| NULL`, `opt(T)`, `opt("ModelName")` |
+| optional | `T \| NULL`, `opt(T)`, `opt("StructName")` |
 | either | `A \| B` |
 | enum | `one_of("a", "b")` |
 | date / time / factor | `date`, `datetime`, `fct("a", "b")` |
@@ -816,15 +1027,16 @@ to_json(schema(User))
 | data.frame with typed columns | `frame(col = T, ...)` |
 | a function value | `anything[is.function(.)]`, `anything[inherits(., "typed_fn")]` |
 | default | `T %default% value` |
-| record | `model("Name", f = T, ...)` |
+| record | `struct("Name", f = T, ...)` |
+| field / struct description | `T %doc% "text"`, `struct(..., .description = "text")` |
 | forward / self reference | `ref("Name")`, `opt("Name")` |
 | subclass, partial | `extend(M, "Sub", ...)`, `partial(M)` |
-| reject unknown keys | `model(..., .extra = "forbid")`, `frame(..., .extra = "forbid")` |
+| reject unknown keys | `struct(..., .extra = "forbid")`, `frame(..., .extra = "forbid")` |
 | typed function | `fn(a = T, ..., ~ Ret, { body })` |
 | typed `...` | `fn(a = T, ... = T, ~ Ret, { body })` |
 | validate anything | `T(x)`, `parse_as(T, x)`, `from_list(M, x)` |
 | validate without throwing | `try_parse(T, x)`, `is_valid(T, x)` |
-| fields of a model or value | `fields(M)`, `fields(x)` |
+| fields of a struct or value | `fields(M)`, `fields(x)` |
 | no coercion / no checks | `options(rdantic.strict = TRUE)`, `options(rdantic.check = FALSE)` |
 | JSON | `to_json(x)`, `from_json(T, txt)`, `schema(T)` |
 | catch errors | `tryCatch(..., typed_error = function(e) e$problems)` |
@@ -836,7 +1048,7 @@ to_json(schema(User))
   `substitute()` — a bare number is a length, an expression mentioning
   `.` is a predicate. `Ops.type` implements `|`. That is the whole DSL;
   there is no parser.
-- **Models compile to constructors** with real formals, built with
+- **Structs compile to constructors** with real formals, built with
   `formals<-` and `bquote()`. Instances are **plain lists** carrying
   their own `spec`, so they copy on modify like every other R value and
   `identical()`, `saveRDS()` and `str()` behave; `$<-` dispatches to a
@@ -858,8 +1070,8 @@ to_json(schema(User))
 ## Not in this proof of concept
 
 - Discriminated unions for polymorphic JSON (`{"type": "admin", ...}`
-  choosing the model).
-- Generic models (`Page(of = User)`).
+  choosing the struct).
+- Generic structs (`Page(of = User)`).
 - Cross-field validators (`.check = function(self) ...`) and row-wise
   constraints in `frame()` beyond predicates over a column.
 - Packaging all of this as an actual R package, with a namespace instead

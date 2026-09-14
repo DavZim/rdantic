@@ -22,7 +22,7 @@ array, even with one element. That is the difference R's own types cannot
 express and JSON needs.
 }
 \examples{
-Tagged <- model("Tagged", id = int[1], tags = chr, seen = date[1] | NULL)
+Tagged <- struct("Tagged", id = int[1], tags = chr, seen = date[1] | NULL)
 to_json(Tagged(id = 3, tags = "cobol"))
 to_json(Tagged(id = 3, tags = c("a", "b"), seen = as.Date("2024-01-01")))
 to_json(schema(Tagged))
