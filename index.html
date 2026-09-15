@@ -371,8 +371,23 @@
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">id_t</span>    <span class="op">&lt;-</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span></span>
 <span><span class="va">email_t</span> <span class="op">&lt;-</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"@"</span>, <span class="va">.</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
-<p>A type is callable: calling it validates a value and hands it back, coerced when that loses nothing.</p>
+<p>Use them exactly like any other type – call them to validate:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">id_t</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="fu">id_t</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! 1 validation problem in int[1][. &gt; 0]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected int[1][. &gt; 0], got num[2]  -- length is 2, not 1</span></span>
+<span></span>
+<span><span class="fu">email_t</span><span class="op">(</span><span class="st">"something@example.com"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "something@example.com"</span></span>
+<span><span class="fu">email_t</span><span class="op">(</span><span class="st">"This is not an email"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! 1 validation problem in chr[1][grepl("@", ., fixed = TRUE)]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected chr[1][grepl("@", ., fixed = TRUE)], got chr[1] "This is not an email"</span></span></code></pre></div>
+<p>A type is callable: calling it validates a value and hands it back, coerced when that loses nothing.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/primitives.html">int</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>          <span class="co"># whole doubles  -&gt; integer</span></span>
 <span><span class="co">#&gt; [1] 1 2 3</span></span>
 <span><span class="fu"><a href="reference/primitives.html">num</a></span><span class="op">(</span><span class="fl">2L</span><span class="op">)</span>                  <span class="co"># integer        -&gt; double</span></span>
@@ -393,7 +408,7 @@
 <span><span class="co">#&gt;   &lt;value&gt;  expected lgl, got num[1] 1  -- 0/1 is not TRUE/FALSE</span></span></code></pre></div>
 <p>Every error names <em>what was expected</em> and <em>what arrived</em> — type, length, and for scalars the value. That shape is the same everywhere in the system.</p>
 <p>Want no coercion at all? Values must then already be the right R type:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>rdantic.strict <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/primitives.html">int</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
@@ -405,7 +420,7 @@
 <h2 id="length">Length<a class="anchor" aria-label="anchor" href="#length"></a>
 </h2>
 <p>R’s central data structure is the vector, so a type without a length is a type of vectors. <code>T[n]</code> fixes the length; <code>T[1]</code> is a scalar.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">int</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1 2 3</span></span>
 <span><span class="va">int</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
@@ -417,12 +432,27 @@
 <span><span class="co">#&gt; ! 1 validation problem in int[1]</span></span>
 <span><span class="co">#&gt;   &lt;value&gt;  expected int[1], got num[2]  -- length is 2, not 1</span></span></code></pre></div>
 <p>The <code>[1]</code> matters more than it looks: most bugs from R’s recycling rules come from a vector arriving where one value was meant.</p>
+<p>For a range rather than an exact length, use <code>length(.)</code>: inside <code>[ ]</code>, <code>.</code> is bound to the whole vector, not one element at a time, so <code>length(.)</code> is the vector’s length.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1 2</span></span>
+<span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! 1 validation problem in int[length(.) &lt;= 3]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected int[length(.) &lt;= 3], got num[4]</span></span>
+<span></span>
+<span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">10</span><span class="op">]</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  [1]  1  2  3  4  5  6  7  8  9 10</span></span>
+<span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">10</span><span class="op">]</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! 1 validation problem in int[length(.) &gt;= 10]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected int[length(.) &gt;= 10], got int[5]</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="constraints">Constraints<a class="anchor" aria-label="anchor" href="#constraints"></a>
 </h2>
 <p>Anything inside <code>[ ]</code> that mentions <code>.</code> is a predicate over the value. It must return <code>TRUE</code> for every element. Constraints and lengths chain in any order.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">num</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1 2</span></span>
 <span><span class="va">num</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="op">-</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
@@ -447,7 +477,7 @@
 <h2 id="unions-optionals-defaults">Unions, optionals, defaults<a class="anchor" aria-label="anchor" href="#unions-optionals-defaults"></a>
 </h2>
 <p><code>A | B</code> accepts either. <code>T | NULL</code> is the idiom for optional. <code>%default%</code> attaches a default value, used by structs and typed functions when a value is not supplied.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">|</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 7</span></span>
 <span><span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">|</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">(</span><span class="st">"seven"</span><span class="op">)</span></span>
@@ -469,7 +499,7 @@
 <h2 id="dates-factors-missing-values">Dates, factors, missing values<a class="anchor" aria-label="anchor" href="#dates-factors-missing-values"></a>
 </h2>
 <p>R’s other quiet failure modes: a <code>Date</code> is a number wearing a class, a factor is an integer wearing labels, and <code>NA</code> sails through every operator. Each gets a type.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/datetimes.html">date</a></span><span class="op">(</span><span class="st">"2024-05-17"</span><span class="op">)</span>                        <span class="co"># ISO-8601 is unambiguous, so it is parsed</span></span>
 <span><span class="co">#&gt; [1] "2024-05-17"</span></span>
 <span><span class="fu"><a href="reference/datetimes.html">date</a></span><span class="op">(</span><span class="st">"17/05/2024"</span><span class="op">)</span></span>
@@ -488,7 +518,7 @@
 <span><span class="co">#&gt; ! 1 validation problem in no_na(num)</span></span>
 <span><span class="co">#&gt;   &lt;value&gt;  expected no_na(num), got num[2]  -- contains NA</span></span></code></pre></div>
 <p>When nothing built in fits, <code><a href="reference/type_from.html">type_from()</a></code> takes a plain predicate and an optional coercion:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># type_from(name, predicate, coerce = NULL)</span></span>
 <span><span class="va">hex</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/type_from.html">type_from</a></span><span class="op">(</span><span class="st">"hex"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">is.character</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^#[0-9a-f]{6}$"</span>, <span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">hex</span><span class="op">(</span><span class="st">"#00ff99"</span><span class="op">)</span></span>
@@ -502,7 +532,7 @@
 <h2 id="named-lists">Named lists<a class="anchor" aria-label="anchor" href="#named-lists"></a>
 </h2>
 <p>Give <code><a href="reference/map_of.html">map_of()</a></code> one type and you get a map: any keys, one value type. Keys are kept, and a failure is reported by key rather than by position — this is what a JSON object with arbitrary keys parses into. <code><a href="reference/list_of.html">list_of()</a></code> given one type is the array counterpart: it only accepts an unnamed list, so the two never overlap.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">budget</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/map_of.html">map_of</a></span><span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">budget</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cpu <span class="op">=</span> <span class="fl">4</span>, memory <span class="op">=</span> <span class="fl">16</span><span class="op">)</span><span class="op">)</span></span>
@@ -517,7 +547,7 @@
 <span><span class="co">#&gt;   $memory  expected int[1][. &gt; 0], got num[1] 0</span></span>
 <span><span class="co">#&gt;   $disk    expected int[1][. &gt; 0], got chr[1] "big"  -- strings are never parsed implicitly</span></span></code></pre></div>
 <p>Name the arguments of <code><a href="reference/list_of.html">list_of()</a></code> instead and you get a third shape: a fixed key set with one rule per key — still a plain named list on the way out, with no class and no struct name.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">limits</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/list_of.html">list_of</a></span><span class="op">(</span>cpu <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="fl">0</span> <span class="op">&lt;</span> <span class="va">.</span> <span class="op">&amp;</span> <span class="va">.</span> <span class="op">&lt;</span> <span class="fl">12</span><span class="op">]</span>, memory <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="fl">0</span> <span class="op">&lt;</span> <span class="va">.</span> <span class="op">&amp;</span> <span class="va">.</span> <span class="op">&lt;</span> <span class="fl">128</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">limits</span></span>
 <span><span class="co">#&gt; &lt;type&gt; list_of(cpu, memory)</span></span>
@@ -547,7 +577,7 @@
 <a class="anchor" aria-label="anchor" href="#records-struct"></a>
 </h2>
 <p>A struct is a set of named, typed fields. <code><a href="reference/struct.html">struct()</a></code> returns a constructor, and that constructor is itself a type (so structs nest and can be used anywhere a type is).</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">User</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"User"</span>,</span>
 <span>  id     <span class="op">=</span> <span class="va">id_t</span>,</span>
 <span>  name   <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
@@ -567,7 +597,7 @@
 <span><span class="co">#&gt;   tags   : chr = character(0)</span></span>
 <span><span class="co">#&gt;   friend : User | NULL</span></span></code></pre></div>
 <p>Construct one like any R function — the constructor has real formals, so autocomplete works:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ada</span> <span class="op">&lt;-</span> <span class="fu">User</span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span>, name <span class="op">=</span> <span class="st">"Ada"</span>, email <span class="op">=</span> <span class="st">"ada@lovelace.org"</span><span class="op">)</span></span>
 <span><span class="va">ada</span></span>
 <span><span class="co">#&gt; &lt;User&gt;</span></span>
@@ -581,7 +611,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">ada</span><span class="op">$</span><span class="va">id</span><span class="op">)</span>                              <span class="co"># coerced to integer on the way in</span></span>
 <span><span class="co">#&gt;  int 1</span></span></code></pre></div>
 <p>A field is required unless it has a default or accepts <code>NULL</code>. Every problem is reported:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">User</span><span class="op">(</span>name <span class="op">=</span> <span class="fl">42</span>, email <span class="op">=</span> <span class="st">"nope"</span>, role <span class="op">=</span> <span class="st">"god"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! 4 validation problems in User</span></span>
@@ -590,7 +620,7 @@
 <span><span class="co">#&gt;   $email  expected chr[1][grepl("@", ., fixed = TRUE)], got chr[1] "nope"</span></span>
 <span><span class="co">#&gt;   $role   expected one_of("admin", "user"), got chr[1] "god"</span></span></code></pre></div>
 <p>Fields are validated on assignment too, and the object is sealed — a typo cannot quietly invent a field, or quietly read a different one. <code>$&lt;-</code>, <code>[[&lt;-</code> and <code>[&lt;-</code> all run the same check, so there is no assignment form that skips it:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ada</span><span class="op">$</span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fl">36L</span></span>
 <span><span class="va">ada</span><span class="op">$</span><span class="va">age</span></span>
 <span><span class="co">#&gt; [1] 36</span></span>
@@ -611,12 +641,12 @@
 <span><span class="co">#&gt; ! &lt;User&gt; has no field `nam` -- did you mean `name`?</span></span>
 <span><span class="co">#&gt;   fields: id, name, email, age, role, tags, friend</span></span></code></pre></div>
 <p>A field name that collides with rdantic’s own internals (like <code>.args</code>) is rejected when the struct is declared:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Broken"</span>, .args <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! field name `.args` is reserved for rdantic's internals; choose a different name</span></span></code></pre></div>
 <p>Instances are plain lists, so they behave like every other R value: copy on modify, no action at a distance.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">copy</span> <span class="op">&lt;-</span> <span class="va">ada</span></span>
 <span><span class="va">copy</span><span class="op">$</span><span class="va">name</span> <span class="op">&lt;-</span> <span class="st">"Grace"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">ada</span><span class="op">$</span><span class="va">name</span>, <span class="va">copy</span><span class="op">$</span><span class="va">name</span><span class="op">)</span></span>
@@ -628,7 +658,7 @@
 <h2 id="nesting-and-errors-that-report-everything">Nesting, and errors that report everything<a class="anchor" aria-label="anchor" href="#nesting-and-errors-that-report-everything"></a>
 </h2>
 <p>Since a struct is a type, structs compose. Where a struct is expected, a plain list is accepted and parsed — this is what makes JSON input work later.</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Team</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Team"</span>,</span>
 <span>  lead    <span class="op">=</span> <span class="va">User</span>,</span>
 <span>  members <span class="op">=</span> <span class="fu"><a href="reference/list_of.html">list_of</a></span><span class="op">(</span><span class="va">User</span><span class="op">)</span>,</span>
@@ -646,7 +676,7 @@
 <span><span class="va">team</span><span class="op">$</span><span class="va">members</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">friend</span><span class="op">$</span><span class="va">name</span></span>
 <span><span class="co">#&gt; [1] "Ada"</span></span></code></pre></div>
 <p>Three mistakes at three depths, one error:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">Team</span><span class="op">(</span></span>
 <span>  lead    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span>, name <span class="op">=</span> <span class="st">"Ada"</span>, email <span class="op">=</span> <span class="st">"ada.lovelace"</span><span class="op">)</span>,</span>
 <span>  members <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">2</span>, name <span class="op">=</span> <span class="st">"Bob"</span>, email <span class="op">=</span> <span class="st">"b@b"</span>, age <span class="op">=</span> <span class="fl">34.5</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -658,7 +688,7 @@
 <span><span class="co">#&gt;   $members[[1]]$age  expected int[1] | NULL, got num[1] 34.5  -- not a whole number</span></span>
 <span><span class="co">#&gt;   $roster$id         expected int, got num[2]  -- not a whole number</span></span></code></pre></div>
 <p>Errors are machine-readable: a condition of class <code>typed_error</code> whose <code>$problems</code> is a list of <code>path</code> / <code>expected</code> / <code>got</code> / <code>hint</code> records, so tooling can consume it, not just people.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu">User</span><span class="op">(</span>id <span class="op">=</span> <span class="st">"x"</span>, name <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, typed_error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    path     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">e</span><span class="op">$</span><span class="va">problems</span>, <span class="va">`[[`</span>, <span class="st">""</span>, <span class="st">"path"</span><span class="op">)</span>,</span>
@@ -670,7 +700,7 @@
 <span><span class="co">#&gt; 2  $name                              chr[1]   num[1] 1</span></span>
 <span><span class="co">#&gt; 3 $email chr[1][grepl("@", ., fixed = TRUE)]  &lt;missing&gt;</span></span></code></pre></div>
 <p>When wrong input is expected rather than exceptional — a web form, an upload — use <code><a href="reference/try_parse.html">try_parse()</a></code>, which returns the same records instead of throwing:</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/try_parse.html">try_parse</a></span><span class="op">(</span><span class="va">User</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1.5</span>, name <span class="op">=</span> <span class="st">"Ada"</span>, email <span class="op">=</span> <span class="st">"nope"</span><span class="op">)</span><span class="op">)</span>  <span class="co"># (T, x): validate, don't throw</span></span>
 <span><span class="va">r</span><span class="op">$</span><span class="va">ok</span></span>
 <span><span class="co">#&gt; [1] FALSE</span></span>
@@ -686,7 +716,7 @@
 <div class="section level2">
 <h2 id="inheritance-partials-unknown-fields">Inheritance, partials, unknown fields<a class="anchor" aria-label="anchor" href="#inheritance-partials-unknown-fields"></a>
 </h2>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Admin</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/extend.html">extend</a></span><span class="op">(</span><span class="va">User</span>, <span class="st">"Admin"</span>, permissions <span class="op">=</span> <span class="fu"><a href="reference/list_of.html">list_of</a></span><span class="op">(</span><span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>  <span class="co"># (Base, "Name", extra field = type, ...)</span></span>
 <span><span class="va">root</span>  <span class="op">&lt;-</span> <span class="fu">Admin</span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span>, name <span class="op">=</span> <span class="st">"root"</span>, email <span class="op">=</span> <span class="st">"root@example.org"</span>,</span>
 <span>               permissions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"all"</span><span class="op">)</span><span class="op">)</span></span>
@@ -705,14 +735,14 @@
 <span><span class="co">#&gt;   tags   : NULL</span></span>
 <span><span class="co">#&gt;   friend : NULL</span></span></code></pre></div>
 <p>When parsing from a list, unknown keys are ignored by default (as in pydantic, and so that JSON written from a subclass still parses as the parent). A struct can forbid them:</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Strict"</span>, x <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, .extra <span class="op">=</span> <span class="st">"forbid"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/from_list.html">from_list</a></span><span class="op">(</span><span class="va">Strict</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span>, y <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>     <span class="co"># from_list(T, x): parse/validate a plain list as T</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! 1 validation problem in Strict</span></span>
 <span><span class="co">#&gt;   $y  expected &lt;no such field&gt;, got num[1] 2  -- did you mean `x`?</span></span></code></pre></div>
 <p><code><a href="reference/frame.html">frame()</a></code> has the same <code>.extra</code>, enforced the same way whether the rows arrive as a data.frame already or as JSON that gets reshaped into one:</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/frame.html">frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="va">int</span>, .extra <span class="op">=</span> <span class="st">"forbid"</span><span class="op">)</span></span>
 <span><span class="fu">Rows</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1L</span>, extra <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
@@ -728,7 +758,7 @@
 <a class="anchor" aria-label="anchor" href="#typed-functions-fn"></a>
 </h2>
 <p>Types sit where R would put defaults; an unnamed formula <code>~ T</code> declares the return type; the last unnamed expression is the body. Defaults use <code>%default%</code>; arguments whose type accepts <code>NULL</code> may be omitted.</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">greet</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fn.html">fn</a></span><span class="op">(</span>name <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, greeting <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op"><a href="reference/grapes-default-grapes.html">%default%</a></span> <span class="st">"Hello"</span>, <span class="op">~</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">greeting</span>, <span class="st">", "</span>, <span class="va">name</span>, <span class="st">"!"</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
@@ -743,7 +773,7 @@
 <span><span class="co">#&gt; ! 1 validation problem in greet()</span></span>
 <span><span class="co">#&gt;   name  expected chr[1], got chr[2]  -- length is 2, not 1</span></span></code></pre></div>
 <p>The return value is checked as well — a typed function cannot leak a wrong result, and an explicit <code><a href="https://rdrr.io/r/base/function.html" class="external-link">return()</a></code> is checked exactly like a value that falls through:</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">half</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fn.html">fn</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">~</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">{</span> <span class="va">x</span> <span class="op">/</span> <span class="fl">2</span> <span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu">half</span><span class="op">(</span><span class="fl">4</span><span class="op">)</span>                                  <span class="co"># 2 is a whole double: coerces to 2L</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
@@ -758,12 +788,12 @@
 <span><span class="co">#&gt; ! 1 validation problem in early()</span></span>
 <span><span class="co">#&gt;   &lt;return&gt;  expected int[1], got chr[1] "negative"  -- strings are never parsed implicitly</span></span></code></pre></div>
 <p>An argument name that collides with rdantic’s own internals (like <code>.probs_</code>) is rejected when the function is declared, rather than silently shadowed:</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/fn.html">fn</a></span><span class="op">(</span>.probs_ <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">~</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">{</span> <span class="va">.probs_</span> <span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! argument name `.probs_` is reserved for rdantic's internals; choose a different name</span></span></code></pre></div>
 <p>Give <code>...</code> a type to check everything passed through it. Every bad argument is reported in one error, as with structs:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">log_line</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fn.html">fn</a></span><span class="op">(</span>level <span class="op">=</span> <span class="fu"><a href="reference/one_of.html">one_of</a></span><span class="op">(</span><span class="st">"info"</span>, <span class="st">"warn"</span><span class="op">)</span>, ... <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">~</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"["</span>, <span class="va">level</span>, <span class="st">"] "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">...</span>, collapse <span class="op">=</span> <span class="st">" "</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
@@ -775,7 +805,7 @@
 <span><span class="co">#&gt;   level  expected one_of("info", "warn"), got chr[1] "debug"</span></span>
 <span><span class="co">#&gt;   ..2    expected chr[1], got num[1] 3</span></span></code></pre></div>
 <p>Checks are compiled once, when the function is defined, and cost tens of microseconds per call — nothing at an API boundary, noticeable in a tight loop. Turn them off globally when you no longer want to pay for them:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>rdantic.check <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu">half</span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1.5</span></span>
@@ -785,11 +815,11 @@
 <h2 id="composing-typed-functions">Composing typed functions<a class="anchor" aria-label="anchor" href="#composing-typed-functions"></a>
 </h2>
 <p>Since a type is just a value plus a predicate, a <em>function</em> type needs no new machinery:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pricing_rule</span> <span class="op">&lt;-</span> <span class="va">anything</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">.</span>, <span class="st">"typed_fn"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">Money</span>        <span class="op">&lt;-</span> <span class="va">num</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">]</span></span></code></pre></div>
 <p><code>rule_for()</code> <strong>returns</strong> a typed function; <code>invoice()</code> <strong>takes</strong> one. Three typed functions, stacked:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rule_for</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fn.html">fn</a></span><span class="op">(</span>kind <span class="op">=</span> <span class="fu"><a href="reference/one_of.html">one_of</a></span><span class="op">(</span><span class="st">"standard"</span>, <span class="st">"bulk"</span>, <span class="st">"clearance"</span><span class="op">)</span>, <span class="op">~</span> <span class="va">pricing_rule</span>, <span class="op">{</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/switch.html" class="external-link">switch</a></span><span class="op">(</span><span class="va">kind</span>,</span>
 <span>    standard  <span class="op">=</span> <span class="fu"><a href="reference/fn.html">fn</a></span><span class="op">(</span>o <span class="op">=</span> <span class="va">Order</span>, <span class="op">~</span> <span class="va">Money</span>, <span class="op">{</span> <span class="va">o</span><span class="op">$</span><span class="va">qty</span> <span class="op">*</span> <span class="va">o</span><span class="op">$</span><span class="va">unit_price</span> <span class="op">}</span><span class="op">)</span>,</span>
@@ -805,13 +835,13 @@
 <span><span class="fu">invoice</span><span class="op">(</span><span class="va">order</span>, <span class="fu">rule_for</span><span class="op">(</span><span class="st">"bulk"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 53.97</span></span></code></pre></div>
 <p>The <code>clearance</code> rule is well-typed on the way in and wrong on the way out. Nothing catches it until the arithmetic has already run:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">invoice</span><span class="op">(</span><span class="va">order</span>, <span class="fu">rule_for</span><span class="op">(</span><span class="st">"clearance"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! 1 validation problem in rule()</span></span>
 <span><span class="co">#&gt;   &lt;return&gt;  expected num[1][. &gt;= 0], got num[1] -440.03</span></span></code></pre></div>
 <p>The report names the frame that produced the bad value (<code>rule()</code>, the innermost of the three) and the stage (<code>&lt;return&gt;</code>), not the outer call the user made. Compare the other three places the same pipeline can break — each one is caught as early as it possibly can be:</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">rule_for</span><span class="op">(</span><span class="st">"half off"</span><span class="op">)</span>                     <span class="co"># (1) argument, at the door</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! 1 validation problem in rule_for()</span></span>
@@ -826,7 +856,7 @@
 <span><span class="co">#&gt;   o$id      expected int[1][. &gt; 0], got chr[1] "1042"  -- strings are never parsed implicitly</span></span>
 <span><span class="co">#&gt;   o$coupon  expected num[1][0 &lt;= . &amp; . &lt;= 1], got num[1] 1.2</span></span></code></pre></div>
 <p>And a factory that forgets to return a function is caught by its own return type, before anyone can call the result:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">broken_for</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fn.html">fn</a></span><span class="op">(</span>kind <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="op">~</span> <span class="va">pricing_rule</span>, <span class="op">{</span> <span class="fu"><a href="https://rdrr.io/r/base/chartr.html" class="external-link">toupper</a></span><span class="op">(</span><span class="va">kind</span><span class="op">)</span> <span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu">broken_for</span><span class="op">(</span><span class="st">"bulk"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error:</span></span>
@@ -837,7 +867,7 @@
 <h2 id="json-and-schema">JSON and schema<a class="anchor" aria-label="anchor" href="#json-and-schema"></a>
 </h2>
 <p><code><a href="reference/to_json.html">to_json()</a></code> is type-aware: a field declared <code>[1]</code> becomes a JSON scalar, any other vector becomes an array, even when it has one element.</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">grace</span> <span class="op">&lt;-</span> <span class="fu">User</span><span class="op">(</span>id <span class="op">=</span> <span class="fl">3</span>, name <span class="op">=</span> <span class="st">"Grace"</span>, email <span class="op">=</span> <span class="st">"grace@navy.mil"</span>, tags <span class="op">=</span> <span class="st">"cobol"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/to_json.html">to_json</a></span><span class="op">(</span><span class="va">grace</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
@@ -850,7 +880,7 @@
 <span><span class="co">#&gt;   "friend": null</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 <p><code><a href="reference/from_json.html">from_json()</a></code> parses and validates in one step. JSON arrays come back as R vectors and arrays of objects as data frames, because the types accept those shapes — there is no separate JSON mode.</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">team2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/from_json.html">from_json</a></span><span class="op">(</span><span class="va">Team</span>, <span class="fu"><a href="reference/to_json.html">to_json</a></span><span class="op">(</span><span class="va">team</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">team2</span><span class="op">$</span><span class="va">roster</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 'data.frame':    2 obs. of  2 variables:</span></span>
@@ -862,7 +892,7 @@
 <span><span class="co">#&gt;   $id    expected int[1][. &gt; 0], got num[1] 1.5  -- not a whole number</span></span>
 <span><span class="co">#&gt;   $name  expected chr[1], got list[2]  -- length is 2, not 1</span></span></code></pre></div>
 <p>And a JSON Schema for interoperating with anything else that speaks types:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/to_json.html">to_json</a></span><span class="op">(</span><span class="fu"><a href="reference/schema.html">schema</a></span><span class="op">(</span><span class="va">User</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "type": "object",</span></span>
@@ -913,7 +943,7 @@
 <span><span class="co">#&gt;   "additionalProperties": false</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 <p>What <code><a href="reference/schema.html">schema()</a></code> declares always matches what <code><a href="reference/to_json.html">to_json()</a></code> actually writes: a <code><a href="reference/frame.html">frame()</a></code> column’s schema describes one row’s scalar cell, not the whole column’s vector shape, and <code><a href="reference/map_of.html">map_of()</a></code>’s schema is an object, matching the JSON object it serializes to.</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Cell</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Cell"</span>, rows <span class="op">=</span> <span class="fu"><a href="reference/frame.html">frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="va">int</span><span class="op">)</span>, tags <span class="op">=</span> <span class="fu"><a href="reference/map_of.html">map_of</a></span><span class="op">(</span><span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="reference/schema.html">schema</a></span><span class="op">(</span><span class="va">Cell</span><span class="op">)</span><span class="op">$</span><span class="va">properties</span><span class="op">$</span><span class="va">rows</span><span class="op">$</span><span class="va">items</span><span class="op">$</span><span class="va">properties</span><span class="op">$</span><span class="va">id</span><span class="op">$</span><span class="va">type</span>,</span>
 <span>  <span class="fu"><a href="reference/schema.html">schema</a></span><span class="op">(</span><span class="va">Cell</span><span class="op">)</span><span class="op">$</span><span class="va">properties</span><span class="op">$</span><span class="va">tags</span><span class="op">$</span><span class="va">type</span><span class="op">)</span></span>
@@ -925,7 +955,7 @@
 <h2 id="documenting-a-schema">Documenting a schema<a class="anchor" aria-label="anchor" href="#documenting-a-schema"></a>
 </h2>
 <p>A description belongs in the schema itself, not beside it in a comment that can drift out of sync — this is what a structured-output model actually reads. There are two places to attach one: <code><a href="reference/desc.html">desc()</a></code> (or its infix spelling <code>%doc%</code>) documents a single field’s type, and <code>struct(.description = )</code> documents the record as a whole.</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Contact</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Contact"</span>,</span>
 <span>  .description <span class="op">=</span> <span class="st">"A single contact record."</span>,</span>
 <span>  name  <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Full name of the person."</span>,  <span class="co"># T %doc% "text": attach a description</span></span>
@@ -953,7 +983,7 @@
 <span><span class="co">#&gt;   "additionalProperties": false</span></span>
 <span><span class="co">#&gt; }</span></span></code></pre></div>
 <p><code><a href="reference/desc.html">desc()</a></code>/<code>%doc%</code> wraps a type, so — like <code>%default%</code> — it must be the outermost part of the chain, applied after <code>[n]</code>, <code>[expr]</code>, <code><a href="reference/opt.html">opt()</a></code>/<code>|</code> and <code>%default%</code>:</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">age</span> <span class="op">&lt;-</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span> <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Age in years, must be positive."</span></span>
 <span><span class="fu"><a href="reference/schema.html">schema</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $type</span></span>

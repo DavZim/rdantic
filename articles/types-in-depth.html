@@ -134,12 +134,27 @@ codebase:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">id_t</span>    <span class="op">&lt;-</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span></span>
 <span><span class="va">email_t</span> <span class="op">&lt;-</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"@"</span>, <span class="va">.</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<p>Use them exactly like any other type – call them to validate:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">id_t</span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="fu">id_t</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 validation problem in int[1][. &gt; 0]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected int[1][. &gt; 0], got num[2]  -- length is 2, not 1</span></span>
+<span></span>
+<span><span class="fu">email_t</span><span class="op">(</span><span class="st">"something@example.com"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "something@example.com"</span></span>
+<span><span class="fu">email_t</span><span class="op">(</span><span class="st">"This is not an email"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 validation problem in chr[1][grepl("@", ., fixed = TRUE)]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected chr[1][grepl("@", ., fixed = TRUE)], got chr[1] "This is not an email"</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="strict-mode">Strict mode<a class="anchor" aria-label="anchor" href="#strict-mode"></a>
 </h3>
 <p>By default, rdantic coerces where nothing is lost. Turn that off to
 require the exact R type:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>rdantic.strict <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/primitives.html">int</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>                    <span class="co"># a double, even a whole one, no longer coerces</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
@@ -154,7 +169,7 @@ require the exact R type:</p>
 <p>R’s central data structure is the vector, so a type without a length
 is a type of vectors. <code>T[n]</code> fixes the length to exactly
 <code>n</code>; <code>T[1]</code> is the common scalar case.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">int</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1 2 3</span></span>
 <span><span class="va">int</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
@@ -168,6 +183,24 @@ is a type of vectors. <code>T[n]</code> fixes the length to exactly
 <p><code>[1]</code> matters more than it looks: most bugs from R’s
 recycling rules come from a vector of the wrong length arriving where a
 single value was meant.</p>
+<p>For a range rather than an exact length, use <code>length(.)</code>:
+inside <code>[ ]</code>, <code>.</code> is bound to the whole vector,
+not one element at a time, so <code>length(.)</code> is the vector’s
+length.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1 2</span></span>
+<span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&lt;=</span> <span class="fl">3</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 validation problem in int[length(.) &lt;= 3]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected int[length(.) &lt;= 3], got num[4]</span></span>
+<span></span>
+<span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">10</span><span class="op">]</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  [1]  1  2  3  4  5  6  7  8  9 10</span></span>
+<span><span class="va">int</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">10</span><span class="op">]</span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 validation problem in int[length(.) &gt;= 10]</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected int[length(.) &gt;= 10], got int[5]</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="constraints">Constraints<a class="anchor" aria-label="anchor" href="#constraints"></a>
@@ -175,7 +208,7 @@ single value was meant.</p>
 <p>Anything inside <code>[ ]</code> that mentions <code>.</code> is a
 predicate over the value, applied elementwise. Length and constraints
 chain in any order, and can be combined:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">num</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1 2</span></span>
 <span><span class="va">num</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="op">-</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
@@ -207,7 +240,7 @@ shorthand <code>opt(T)</code>) is how to say “optional”.
 by a struct field or a function argument, see
 <code><a href="../articles/structs.html">vignette("structs")</a></code> and
 <code><a href="../articles/typed-functions.html">vignette("typed-functions")</a></code>.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">|</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 7</span></span>
 <span><span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">|</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">(</span><span class="st">"seven"</span><span class="op">)</span></span>
@@ -231,7 +264,7 @@ by a struct field or a function argument, see
 <p><code>one_of(...)</code> restricts a value to an exact set of
 options. <code>no_na(T)</code> wraps any type to additionally reject
 <code>NA</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/one_of.html">one_of</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"mid"</span>, <span class="st">"high"</span><span class="op">)</span><span class="op">(</span><span class="st">"high"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "high"</span></span>
 <span><span class="fu"><a href="../reference/one_of.html">one_of</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"mid"</span>, <span class="st">"high"</span><span class="op">)</span><span class="op">(</span><span class="st">"medium"</span><span class="op">)</span></span>
@@ -250,7 +283,7 @@ options. <code>no_na(T)</code> wraps any type to additionally reject
 <p>When nothing built in fits, <code><a href="../reference/type_from.html">type_from()</a></code> builds a type
 from a plain predicate and an optional coercion, without touching
 rdantic’s internal problem format:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hex</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/type_from.html">type_from</a></span><span class="op">(</span><span class="st">"hex"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">is.character</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^#[0-9a-f]{6}$"</span>, <span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">hex</span><span class="op">(</span><span class="st">"#00ff99"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "#00ff99"</span></span>
@@ -279,7 +312,7 @@ Schema fragment, see <code><a href="../reference/new_type.html">new_type()</a></
 type is not known ahead of time, or when a thrown error is not what you
 want – see <code><a href="../articles/errors-and-validation.html">vignette("errors-and-validation")</a></code> for the full
 picture:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/parse_as.html">parse_as</a></span><span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span>             <span class="co"># same as int[1](3), useful when the type is a variable</span></span>
 <span><span class="co">#&gt; [1] 3</span></span>
 <span><span class="fu"><a href="../reference/is_valid.html">is_valid</a></span><span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">3.5</span><span class="op">)</span>           <span class="co"># TRUE/FALSE, no detail</span></span>
