@@ -16,23 +16,22 @@ declared. Only meaningful for the keyed form.}
 A type.
 }
 \description{
-\code{list_of(T)} is a list of any length whose elements are all \code{T} -- named or
-not. Keys are kept, and a failure is reported by key rather than by
-position, so a named list is the map type, and it is what a JSON object with
-arbitrary keys parses into.
+\code{list_of(T)} is an array of any length whose elements are all \code{T}; only an
+unnamed list is accepted -- reach for \code{\link[=map_of]{map_of()}} for a named, arbitrary-key
+shape.
 }
 \details{
-\code{list_of(a = T, b = T)} is the opposite: a fixed key set with one rule per
-key, still a plain named list on the way out. Missing keys are reported,
-\verb{\%default\%} fills them in, and \code{.extra = "forbid"} refuses unknown ones.
-Reach for \code{\link[=struct]{struct()}} when the record deserves a name, a class and
-inheritance.
+\code{list_of(a = T, b = T)} is a different thing again: a fixed key set with
+one rule per key, still a plain named list on the way out. Missing keys are
+reported, \verb{\%default\%} fills them in, and \code{.extra = "forbid"} refuses
+unknown ones. Reach for \code{\link[=struct]{struct()}} when the record deserves a name, a class
+and inheritance.
 }
 \examples{
-# a map: any keys, one value type
-budget <- list_of(int[1][. > 0])
-budget(list(cpu = 4, memory = 16))
-try(budget(list(cpu = 4, memory = 0)))
+# an array of any length, one element type
+tags <- list_of(chr[1])
+tags(list("a", "b"))
+try(tags(list(a = "x")))                # a named list is map_of(), not this
 
 # a fixed key set, one rule per key
 limits <- list_of(cpu = int[1][0 < . & . < 12], memory = int[1][0 < . & . < 128])
@@ -45,5 +44,6 @@ list_of(cpu = int[1], .extra = "forbid")
 schema(limits)
 }
 \seealso{
-\code{\link[=frame]{frame()}} for a data frame, \code{\link[=struct]{struct()}} for a named record.
+\code{\link[=map_of]{map_of()}} for an arbitrary-key map, \code{\link[=frame]{frame()}} for a data frame,
+\code{\link[=struct]{struct()}} for a named record.
 }

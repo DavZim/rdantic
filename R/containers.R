@@ -68,28 +68,28 @@
 
 #' List types
 #'
-#' `list_of(T)` is a list of any length whose elements are all `T` -- named or
-#' not. Keys are kept, and a failure is reported by key rather than by
-#' position, so a named list is the map type, and it is what a JSON object with
-#' arbitrary keys parses into.
+#' `list_of(T)` is an array of any length whose elements are all `T`; only an
+#' unnamed list is accepted -- reach for [map_of()] for a named, arbitrary-key
+#' shape.
 #'
-#' `list_of(a = T, b = T)` is the opposite: a fixed key set with one rule per
-#' key, still a plain named list on the way out. Missing keys are reported,
-#' `%default%` fills them in, and `.extra = "forbid"` refuses unknown ones.
-#' Reach for [struct()] when the record deserves a name, a class and
-#' inheritance.
+#' `list_of(a = T, b = T)` is a different thing again: a fixed key set with
+#' one rule per key, still a plain named list on the way out. Missing keys are
+#' reported, `%default%` fills them in, and `.extra = "forbid"` refuses
+#' unknown ones. Reach for [struct()] when the record deserves a name, a class
+#' and inheritance.
 #'
 #' @param ... One element type, or named keys with one type each.
 #' @param .extra `"ignore"` (default) or `"forbid"`, for keys that were not
 #'   declared. Only meaningful for the keyed form.
 #' @return A type.
 #' @export
-#' @seealso [frame()] for a data frame, [struct()] for a named record.
+#' @seealso [map_of()] for an arbitrary-key map, [frame()] for a data frame,
+#'   [struct()] for a named record.
 #' @examples
-#' # a map: any keys, one value type
-#' budget <- list_of(int[1][. > 0])
-#' budget(list(cpu = 4, memory = 16))
-#' try(budget(list(cpu = 4, memory = 0)))
+#' # an array of any length, one element type
+#' tags <- list_of(chr[1])
+#' tags(list("a", "b"))
+#' try(tags(list(a = "x")))                # a named list is map_of(), not this
 #'
 #' # a fixed key set, one rule per key
 #' limits <- list_of(cpu = int[1][0 < . & . < 12], memory = int[1][0 < . & . < 128])
@@ -115,7 +115,7 @@ list_of <- function(..., .extra = c("ignore", "forbid")) {
   .list_of_keys(lapply(args, as_type), .extra)
 }
 
-#' A list of any length with one element type
+#' An array of any length with one element type
 #'
 #' @param t The element type.
 #' @return A type.
@@ -129,20 +129,73 @@ list_of <- function(..., .extra = c("ignore", "forbid")) {
     validate = function(x, path) {
       if (!is.list(x) || is.data.frame(x) || inherits(x, "typed_instance"))
         return(.bad(path, name, .got(x)))
+      if (!is.null(names(x)) && any(nzchar(names(x))))
+        return(.bad(path, name, .got(x), "a named list is map_of(), not list_of()"))
       validate <- .spec(t)$validate
       out <- vector("list", length(x))
-      nms <- names(x)
-      names(out) <- nms
       probs <- list()
       for (i in seq_along(x)) {
-        p <- if (!is.null(nms) && nzchar(nms[i]))
-          paste0(path, "$", nms[i]) else sprintf("%s[[%d]]", path, i)
-        r <- validate(x[[i]], p)
+        r <- validate(x[[i]], sprintf("%s[[%d]]", path, i))
         if (.is_bad(r)) probs <- c(probs, unclass(r)) else out[i] <- list(r)
       }
       if (length(probs)) .fail(probs) else out
     },
     schema = function() list(type = "array", items = .spec(t)$schema()),
+    elt = t
+  )
+}
+
+#' Map types
+#'
+#' The map counterpart of `list_of(T)`: arbitrary keys, one value type, kept
+#' by name -- and what a JSON object with arbitrary keys parses into. A
+#' failure is reported by key rather than by position.
+#'
+#' Reach for `list_of(a = T, b = T)` instead when the key set is fixed and
+#' known up front.
+#'
+#' @param t The value type.
+#' @return A type.
+#' @export
+#' @seealso [list_of()] for an array, or a fixed key set.
+#' @examples
+#' budget <- map_of(int[1][. > 0])
+#' budget(list(cpu = 4, memory = 16))
+#' try(budget(list(cpu = 4, memory = 0)))
+#' try(map_of(int[1])(list(1, 2)))         # unnamed input is list_of(), not this
+#'
+#' schema(budget)
+#' from_json(map_of(int[1]), '{"cpu": 4, "memory": 16}')
+map_of <- function(t) .map_of_any(as_type(t))
+
+#' A map of any length with one element type, keyed by name
+#'
+#' @param t The element type.
+#' @return A type.
+#' @keywords internal
+#' @examples
+#' rdantic:::.map_of_any(int[1])(list(a = 1, b = 2))
+.map_of_any <- function(t) {
+  name <- sprintf("map_of(%s)", .spec(t)$name)
+  new_type(
+    name,
+    validate = function(x, path) {
+      if (!is.list(x) || is.data.frame(x) || inherits(x, "typed_instance"))
+        return(.bad(path, name, .got(x)))
+      if (length(x) && (is.null(names(x)) || any(!nzchar(names(x)))))
+        return(.bad(path, name, .got(x), "every key must be named"))
+      validate <- .spec(t)$validate
+      out <- vector("list", length(x))
+      names(out) <- names(x)
+      probs <- list()
+      for (i in seq_along(x)) {
+        r <- validate(x[[i]], paste0(path, "$", names(x)[i]))
+        if (.is_bad(r)) probs <- c(probs, unclass(r)) else out[i] <- list(r)
+      }
+      if (length(probs)) .fail(probs) else out
+    },
+    schema = function()
+      list(type = "object", additionalProperties = .spec(t)$schema()),
     elt = t
   )
 }
@@ -212,7 +265,7 @@ frame <- function(..., .extra = c("ignore", "forbid")) {
     name,
     validate = function(x, path) {
       if (.ctx$parsing && is.list(x) && !is.data.frame(x)) {
-        x <- .rows_to_df(x, cols, path, name)
+        x <- .rows_to_df(x, cols, path, name, .extra)
         if (.is_bad(x)) return(x)
       }
       if (!is.data.frame(x)) return(.bad(path, name, .got(x)))
@@ -267,7 +320,11 @@ frame <- function(..., .extra = c("ignore", "forbid")) {
         type = "array",
         items = list(
           type = "object",
-          properties = lapply(cols, function(c) .spec(c)$schema())
+          # a row cell is one scalar value, not the whole column's vector shape
+          properties = lapply(cols, function(c) {
+            s <- .spec(c)$schema()
+            if (identical(s$type, "array")) s$items else s
+          })
         )
       )
   )
@@ -282,11 +339,12 @@ frame <- function(..., .extra = c("ignore", "forbid")) {
 #' @param cols The named list of column types.
 #' @param path The path prefix for problem records.
 #' @param name The frame type's name.
+#' @param extra `"ignore"` or `"forbid"`, for row keys that were not declared.
 #' @return A data frame, or a `typed_problems` object.
 #' @keywords internal
 #' @examples
-#' rdantic:::.rows_to_df(list(list(a = 1), list(a = 2)), list(a = int), "", "frame(a)")
-.rows_to_df <- function(rows, cols, path, name) {
+#' rdantic:::.rows_to_df(list(list(a = 1), list(a = 2)), list(a = int), "", "frame(a)", "ignore")
+.rows_to_df <- function(rows, cols, path, name, extra) {
   if (!length(rows))
     return(structure(
       lapply(cols, function(t) {
@@ -299,6 +357,12 @@ frame <- function(..., .extra = c("ignore", "forbid")) {
   if (!all(vapply(rows, function(r) is.list(r) && !is.null(names(r)), NA)))
     return(.bad(path, name, .got(rows)))
   probs <- list()
+  if (identical(extra, "forbid"))
+    for (e in setdiff(unique(unlist(lapply(rows, names))), names(cols)))
+      probs <- c(
+        probs,
+        unclass(.bad(paste0(path, "$", e), "<no such column>", "<present in JSON>"))
+      )
   out <- lapply(stats::setNames(nm = names(cols)), function(col) {
     miss <- which(!vapply(rows, function(r) col %in% names(r), NA))
     if (length(miss)) {

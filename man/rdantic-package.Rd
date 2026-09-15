@@ -17,7 +17,7 @@ Types are ordinary values built from operators R already has:
 \item \link{datetimes} and \code{\link[=fct]{fct()}} -- \code{date}, \code{datetime}, factors
 \item \code{T[n]} and \code{T[. > 0]} -- length and constraints, see [\verb{[.type}]
 \item \code{A | B}, \code{\link[=opt]{opt()}}, \code{\link[=no_na]{no_na()}}, \code{\link[=one_of]{one_of()}}, \verb{\%default\%}
-\item \code{\link[=list_of]{list_of()}} and \code{\link[=frame]{frame()}} -- lists, maps and data frames
+\item \code{\link[=list_of]{list_of()}}, \code{\link[=map_of]{map_of()}} and \code{\link[=frame]{frame()}} -- lists, maps and data frames
 \item \code{\link[=struct]{struct()}}, \code{\link[=extend]{extend()}}, \code{\link[=partial]{partial()}} -- records
 \item \code{\link[=fn]{fn()}} -- typed functions
 \item \code{\link[=parse_as]{parse_as()}}, \code{\link[=try_parse]{try_parse()}}, \code{\link[=from_json]{from_json()}}, \code{\link[=to_json]{to_json()}}, \code{\link[=schema]{schema()}}

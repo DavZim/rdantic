@@ -137,7 +137,7 @@ to_json <- function(x, pretty = TRUE, ...) {
 #' Reading <- struct("Reading", station = chr[1], celsius = num[1], at = datetime[1])
 #' from_json(Reading, '{"station": "KOA", "celsius": 21.5, "at": "2024-05-17T09:30:00"}')
 #'
-#' from_json(list_of(int[1]), '{"cpu": 4, "memory": 16}')
+#' from_json(map_of(int[1]), '{"cpu": 4, "memory": 16}')
 #' from_json(frame(id = int, nm = chr), '[{"id": 1, "nm": "a"}]')
 #'
 #' try(from_json(Reading, '{"station": ["a", "b"], "celsius": 21.5, "at": "nope"}'))

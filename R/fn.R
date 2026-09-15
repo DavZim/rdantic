@@ -125,6 +125,11 @@ fn <- function(...) {
   body_i <- setdiff(which(nms == ""), ret_i)
   if (length(body_i) != 1) stop("fn() needs exactly one body expression")
   if (length(ret_i) > 1) stop("fn() accepts one return-type formula (~ T)")
+  .reject_reserved(
+    nms[arg_i],
+    c(".probs_", ".types_", ".ret_", ".result_", ".r_", ".missing_"),
+    "argument"
+  )
 
   types <- lapply(exprs[arg_i], function(e) as_type(eval(e, env)))
   names(types) <- nms[arg_i]
@@ -151,12 +156,22 @@ fn <- function(...) {
     s <- .spec(t)
     if (isTRUE(s$has_default)) s$default else quote(expr = )
   })
+  # an explicit return() inside the body would otherwise unwind straight out
+  # of f(), skipping the return-type check below; shadowing return() to
+  # invoke a restart lets the wrapping .check_arg() still see the value
+  guarded_body <- bquote(withRestarts(
+    {
+      return <- function(value) invokeRestart(".rdantic_return_", value)
+      .(exprs[[body_i]])
+    },
+    .rdantic_return_ = function(value) value
+  ))
   body(f) <- bquote({
     if (isTRUE(getOption("rdantic.check", TRUE))) {
       .probs_ <- list()
       .entry(.(as.call(c(as.name("{"), checks))))
       if (length(.probs_)) .abort(.probs_, .fn_name(sys.call()))
-      .result_ <- .entry(.check_arg(.ret_, .(exprs[[body_i]]), "<return>"))
+      .result_ <- .entry(.check_arg(.ret_, .(guarded_body), "<return>"))
       if (.is_bad(.result_)) .abort(.result_, .fn_name(sys.call()))
       .result_
     } else .(exprs[[body_i]])

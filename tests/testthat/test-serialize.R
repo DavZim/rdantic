@@ -40,6 +40,13 @@ test_that("a keyed list serialises as an object with per-key types", {
   )
 })
 
+test_that("a map_of() field serialises as an object matching its own schema", {
+  MapEnvelope <- struct("JMapEnvelope", map = map_of(int[1]))
+  txt <- as.character(to_json(MapEnvelope(map = list(cpu = 1L)), pretty = FALSE))
+  expect_identical(txt, '{"map":{"cpu":1}}')
+  expect_identical(schema(MapEnvelope)$properties$map$type, "object")
+})
+
 test_that("JSON round trips through the declared types", {
   M <- mk_json_struct()
   doc <- M(
@@ -57,7 +64,7 @@ test_that("JSON round trips through the declared types", {
 
 test_that("a JSON object with arbitrary keys is a named list", {
   expect_identical(
-    from_json(list_of(int[1]), '{"cpu":4,"mem":16}'),
+    from_json(map_of(int[1]), '{"cpu":4,"mem":16}'),
     list(cpu = 4L, mem = 16L)
   )
 })

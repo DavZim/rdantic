@@ -4,7 +4,7 @@
 \alias{.rows_to_df}
 \title{Turn a list of row records into a data frame}
 \usage{
-.rows_to_df(rows, cols, path, name)
+.rows_to_df(rows, cols, path, name, extra)
 }
 \arguments{
 \item{rows}{The list of records.}
@@ -14,6 +14,8 @@
 \item{path}{The path prefix for problem records.}
 
 \item{name}{The frame type's name.}
+
+\item{extra}{\code{"ignore"} or \code{"forbid"}, for row keys that were not declared.}
 }
 \value{
 A data frame, or a \code{typed_problems} object.
@@ -23,6 +25,6 @@ jsonlite parses \verb{[\{...\}, \{...\}]} as a list of records. An empty array
 becomes a zero-row frame with columns of the declared types.
 }
 \examples{
-rdantic:::.rows_to_df(list(list(a = 1), list(a = 2)), list(a = int), "", "frame(a)")
+rdantic:::.rows_to_df(list(list(a = 1), list(a = 2)), list(a = int), "", "frame(a)", "ignore")
 }
 \keyword{internal}

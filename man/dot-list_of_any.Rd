@@ -2,7 +2,7 @@
 % Please edit documentation in R/containers.R
 \name{.list_of_any}
 \alias{.list_of_any}
-\title{A list of any length with one element type}
+\title{An array of any length with one element type}
 \usage{
 .list_of_any(t)
 }
@@ -13,7 +13,7 @@
 A type.
 }
 \description{
-A list of any length with one element type
+An array of any length with one element type
 }
 \examples{
 rdantic:::.list_of_any(int[1])(list(1, 2))

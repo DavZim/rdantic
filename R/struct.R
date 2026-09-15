@@ -128,6 +128,7 @@ struct <- function(
   if (is.null(nms)) nms <- rep("", length(fields))
   if (length(fields) && any(!nzchar(nms)))
     stop("all struct fields must be named")
+  .reject_reserved(nms, c(".args", ".spec_", ".spec_env_"), "field")
   fields <- lapply(fields, as_type)
   name <- .name
   parents <- .parents
@@ -380,6 +381,20 @@ fields <- function(x) {
 #' @rdname instance-set
 #' @export
 `[[<-.typed_instance` <- function(x, i, value) .set_field(x, i, value)
+
+#' @rdname instance-set
+#' @export
+#' @examples
+#' k <- Job(state = "queued", tries = 0)
+#' k["tries"] <- 1
+#' k$tries
+#' try(k["state"] <- "exploded")
+`[<-.typed_instance` <- function(x, i, value) {
+  if (is.numeric(i)) i <- fields(x)[i]
+  vals <- if (length(i) > 1) as.list(value) else list(value)
+  for (k in seq_along(i)) x <- .set_field(x, i[[k]], vals[[k]])
+  x
+}
 
 #' Parse a plain list into a struct
 #'

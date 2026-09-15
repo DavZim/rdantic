@@ -10,7 +10,7 @@
 #' * [datetimes] and [fct()] -- `date`, `datetime`, factors
 #' * `T[n]` and `T[. > 0]` -- length and constraints, see [`[.type`]
 #' * `A | B`, [opt()], [no_na()], [one_of()], `%default%`
-#' * [list_of()] and [frame()] -- lists, maps and data frames
+#' * [list_of()], [map_of()] and [frame()] -- lists, maps and data frames
 #' * [struct()], [extend()], [partial()] -- records
 #' * [fn()] -- typed functions
 #' * [parse_as()], [try_parse()], [from_json()], [to_json()], [schema()]

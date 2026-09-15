@@ -121,7 +121,7 @@ ada$age <- "old"                          # instances stay valid: checked on ass
 ```
 
 ``` r
-budget <- list_of(int[1][. > 0])          # a map: any keys, one value type
+budget <- map_of(int[1][. > 0])           # a map: any keys, one value type
 budget(list(cpu = 4, memory = 16))
 #> $cpu
 #> [1] 4
@@ -307,6 +307,8 @@ fct("low", "mid", "high")                 # fct(...): a factor restricted to the
 #> <type> fct("low", "mid", "high")
 list_of(int[1])                           # list_of(T): a list of any length, all elements T
 #> <type> list_of(int[1])
+map_of(int[1])                            # map_of(T): arbitrary keys, one value type
+#> <type> map_of(int[1])
 list_of(cpu = int[1], memory = int[1])    # list_of(a = T, b = T, ...): fixed keys, one type each
 #> <type> list_of(cpu, memory)
 frame(id = int, label = chr)              # frame(col = T, ...): a data.frame with typed columns
@@ -451,7 +453,7 @@ date("17/05/2024")
 num(Sys.Date())                           # ... but a Date is never silently a number
 #> Error:
 #> ! 1 validation problem in num
-#>   <value>  expected num, got date[1] "2026-09-14"  -- a <Date> is never silently unclassed
+#>   <value>  expected num, got date[1] "2026-09-15"  -- a <Date> is never silently unclassed
 fct("low", "high")("high")
 #> [1] high
 #> Levels: low high
@@ -477,12 +479,14 @@ hex("green")
 
 ## Named lists
 
-Give `list_of()` one type and you get a map: any keys, one value type.
+Give `map_of()` one type and you get a map: any keys, one value type.
 Keys are kept, and a failure is reported by key rather than by position
 — this is what a JSON object with arbitrary keys parses into.
+`list_of()` given one type is the array counterpart: it only accepts an
+unnamed list, so the two never overlap.
 
 ``` r
-budget <- list_of(int[1][. > 0])
+budget <- map_of(int[1][. > 0])
 
 budget(list(cpu = 4, memory = 16))
 #> $cpu
@@ -492,14 +496,14 @@ budget(list(cpu = 4, memory = 16))
 #> [1] 16
 budget(list(cpu = 4, memory = 0, disk = "big"))
 #> Error:
-#> ! 2 validation problems in list_of(int[1][. > 0])
+#> ! 2 validation problems in map_of(int[1][. > 0])
 #>   $memory  expected int[1][. > 0], got num[1] 0
 #>   $disk    expected int[1][. > 0], got chr[1] "big"  -- strings are never parsed implicitly
 ```
 
-Name the arguments instead and you get the opposite: a fixed key set
-with one rule per key — still a plain named list on the way out, with no
-class and no struct name.
+Name the arguments of `list_of()` instead and you get a third shape: a
+fixed key set with one rule per key — still a plain named list on the
+way out, with no class and no struct name.
 
 ``` r
 limits <- list_of(cpu = int[1][0 < . & . < 12], memory = int[1][0 < . & . < 128])
@@ -591,13 +595,19 @@ User(name = 42, email = "nope", role = "god")
 ```
 
 Fields are validated on assignment too, and the object is sealed — a
-typo cannot quietly invent a field, or quietly read a different one:
+typo cannot quietly invent a field, or quietly read a different one.
+`$<-`, `[[<-` and `[<-` all run the same check, so there is no
+assignment form that skips it:
 
 ``` r
 ada$age <- 36L
 ada$age
 #> [1] 36
 ada$age <- "thirty-six"
+#> Error:
+#> ! 1 validation problem in User
+#>   $age  expected int[1] | NULL, got chr[1] "thirty-six"  -- strings are never parsed implicitly
+ada["age"] <- "thirty-six"               # [<- checks the field just like $<- does
 #> Error:
 #> ! 1 validation problem in User
 #>   $age  expected int[1] | NULL, got chr[1] "thirty-six"  -- strings are never parsed implicitly
@@ -609,6 +619,15 @@ ada$nam
 #> Error:
 #> ! <User> has no field `nam` -- did you mean `name`?
 #>   fields: id, name, email, age, role, tags, friend
+```
+
+A field name that collides with rdantic’s own internals (like `.args`)
+is rejected when the struct is declared:
+
+``` r
+struct("Broken", .args = int[1])
+#> Error:
+#> ! field name `.args` is reserved for rdantic's internals; choose a different name
 ```
 
 Instances are plain lists, so they behave like every other R value: copy
@@ -732,6 +751,21 @@ from_list(Strict, list(x = 1, y = 2))     # from_list(T, x): parse/validate a pl
 #>   $y  expected <no such field>, got num[1] 2  -- did you mean `x`?
 ```
 
+`frame()` has the same `.extra`, enforced the same way whether the rows
+arrive as a data.frame already or as JSON that gets reshaped into one:
+
+``` r
+Rows <- frame(id = int, .extra = "forbid")
+Rows(data.frame(id = 1L, extra = 2))
+#> Error:
+#> ! 1 validation problem in frame(id)
+#>   $extra  expected <no such column>, got num[1] 2
+from_json(Rows, '[{"id": 1, "extra": 2}]')
+#> Error:
+#> ! 1 validation problem in frame(id)
+#>   $extra  expected <no such column>, got <present in JSON>
+```
+
 ## Typed functions: `fn()`
 
 Types sit where R would put defaults; an unnamed formula `~ T` declares
@@ -755,7 +789,8 @@ greet(c("Ada", "Bob"))
 ```
 
 The return value is checked as well — a typed function cannot leak a
-wrong result:
+wrong result, and an explicit `return()` is checked exactly like a value
+that falls through:
 
 ``` r
 half <- fn(x = int[1], ~ int[1], { x / 2 })
@@ -765,6 +800,22 @@ half(3)                                  # 1.5 is not an int
 #> Error:
 #> ! 1 validation problem in half()
 #>   <return>  expected int[1], got num[1] 1.5  -- not a whole number
+
+early <- fn(x = int[1], ~ int[1], { if (x < 0) return("negative"); x })
+early(-1)                                # return()'s value is checked too
+#> Error:
+#> ! 1 validation problem in early()
+#>   <return>  expected int[1], got chr[1] "negative"  -- strings are never parsed implicitly
+```
+
+An argument name that collides with rdantic’s own internals (like
+`.probs_`) is rejected when the function is declared, rather than
+silently shadowed:
+
+``` r
+fn(.probs_ = int[1], ~ int[1], { .probs_ })
+#> Error:
+#> ! argument name `.probs_` is reserved for rdantic's internals; choose a different name
 ```
 
 Give `...` a type to check everything passed through it. Every bad
@@ -958,6 +1009,20 @@ to_json(schema(User))
 #> }
 ```
 
+What `schema()` declares always matches what `to_json()` actually
+writes: a `frame()` column’s schema describes one row’s scalar cell, not
+the whole column’s vector shape, and `map_of()`’s schema is an object,
+matching the JSON object it serializes to.
+
+``` r
+Cell <- struct("Cell", rows = frame(id = int), tags = map_of(chr[1]))
+c(schema(Cell)$properties$rows$items$properties$id$type,
+  schema(Cell)$properties$tags$type)
+#> [1] "integer" "object"
+to_json(Cell(rows = data.frame(id = 1L), tags = list(a = "x")), pretty = FALSE)
+#> {"rows":[{"id":1}],"tags":{"a":"x"}}
+```
+
 ## Documenting a schema
 
 A description belongs in the schema itself, not beside it in a comment
@@ -1023,6 +1088,7 @@ schema(age)
 | no missing values | `no_na(T)` |
 | custom type | `type_from("name", predicate, coerce)` |
 | list of | `list_of(T)` |
+| map (arbitrary keys) | `map_of(T)` |
 | named list with fixed keys | `list_of(a = T, b = T)` |
 | data.frame with typed columns | `frame(col = T, ...)` |
 | a function value | `anything[is.function(.)]`, `anything[inherits(., "typed_fn")]` |

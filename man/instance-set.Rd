@@ -3,11 +3,14 @@
 \name{$<-.typed_instance}
 \alias{$<-.typed_instance}
 \alias{[[<-.typed_instance}
+\alias{[<-.typed_instance}
 \title{Set a field of an instance}
 \usage{
 \method{$}{typed_instance}(x, name) <- value
 
 \method{[[}{typed_instance}(x, i) <- value
+
+\method{[}{typed_instance}(x, i) <- value
 }
 \arguments{
 \item{x}{An instance.}
@@ -31,4 +34,8 @@ j$state <- "done"
 j$state
 try(j$state <- "exploded")
 try(j$stat <- "done")
+k <- Job(state = "queued", tries = 0)
+k["tries"] <- 1
+k$tries
+try(k["state"] <- "exploded")
 }

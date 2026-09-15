@@ -3,15 +3,29 @@ test_that("list_of(T) validates every element and collects problems", {
   expect_length(problem_paths(parse_as(list_of(int[1]), list(1, "two", 3.5))), 2)
 })
 
-test_that("a named list keeps its names and is reported by key", {
+test_that("list_of(T) rejects a named list; that is map_of(T)'s shape", {
+  expect_error(list_of(int[1])(list(a = 1, b = 2)), class = "typed_error")
+})
+
+test_that("map_of(T) keeps names and is reported by key", {
   expect_identical(
-    names(parse_as(list_of(int[1]), list(a = 1, b = 2))),
+    names(parse_as(map_of(int[1]), list(a = 1, b = 2))),
     c("a", "b")
   )
   expect_identical(
-    problem_paths(parse_as(list_of(int[1]), list(a = 1, b = "x"))),
+    problem_paths(parse_as(map_of(int[1]), list(a = 1, b = "x"))),
     "$b"
   )
+})
+
+test_that("map_of(T) rejects an unnamed list; that is list_of(T)'s shape", {
+  expect_error(map_of(int[1])(list(1, 2)), class = "typed_error")
+})
+
+test_that("map_of(T) produces an object schema with additionalProperties", {
+  s <- schema(map_of(int[1]))
+  expect_identical(s$type, "object")
+  expect_identical(s$additionalProperties, schema(int[1]))
 })
 
 test_that("list_of rejects things that are not lists", {
@@ -68,6 +82,14 @@ test_that("frame can forbid undeclared columns", {
   expect_identical(problem_paths(strict(data.frame(id = 1L, x = 2))), "$x")
 })
 
+test_that("frame forbids undeclared keys parsed from JSON rows too", {
+  strict <- frame(id = int, .extra = "forbid")
+  expect_identical(
+    problem_paths(from_json(strict, '[{"id":1,"extra":2}]')),
+    "$extra"
+  )
+})
+
 test_that("frame checks that a column fits the number of rows", {
   one <- frame(id = int[1])
   expect_match(
@@ -95,4 +117,11 @@ test_that("an empty JSON array becomes a zero-row frame", {
   out <- from_json(frame(id = int, nm = chr), "[]")
   expect_identical(nrow(out), 0L)
   expect_identical(names(out), c("id", "nm"))
+})
+
+test_that("frame's schema describes a per-row scalar cell, not a whole-column vector", {
+  roster <- frame(id = int, name = chr)
+  s <- schema(roster)
+  expect_identical(s$items$properties$id$type, "integer")
+  expect_identical(s$items$properties$name$type, "string")
 })

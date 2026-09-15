@@ -167,6 +167,31 @@ type_of <- function(x) {
     sprintf("did you mean `%s`?", candidates[i]) else NULL
 }
 
+#' Reject names that would collide with generated code's own bindings
+#'
+#' `fn()` and `struct()` splice user-supplied names into generated code
+#' alongside a handful of internal bookkeeping variables; a name equal to one
+#' of those would silently shadow it instead of erroring, so this rejects the
+#' collision up front instead.
+#'
+#' @param nms The supplied names.
+#' @param reserved The names that must not be used.
+#' @param what What kind of name this is, e.g. `"argument"` or `"field"`.
+#' @return Nothing; throws when a reserved name is used.
+#' @keywords internal
+#' @examples
+#' rdantic:::.reject_reserved(c("x", "y"), c(".r_"), "argument")
+#' try(rdantic:::.reject_reserved(c(".r_"), c(".r_"), "argument"))
+.reject_reserved <- function(nms, reserved, what) {
+  hit <- intersect(nms, reserved)
+  if (length(hit))
+    stop(sprintf(
+      "%s name `%s` is reserved for rdantic's internals; choose a different name",
+      what,
+      hit[1]
+    ), call. = FALSE)
+}
+
 #' Throw a validation error
 #'
 #' Every problem is reported, one per line, each with its path, what was

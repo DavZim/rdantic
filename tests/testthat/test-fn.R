@@ -16,6 +16,13 @@ test_that("the return value is checked", {
   expect_identical(problem_paths(half(3)), "<return>")
 })
 
+test_that("an explicit return() is checked exactly like an implicit result", {
+  bad <- fn(x = int[1], ~ int[1], { return("wrong") })
+  expect_error(bad(1L), class = "typed_error")
+  ok <- fn(x = int[1], ~ int[1], { return(x) })
+  expect_identical(ok(1L), 1L)
+})
+
 test_that("a missing argument is reported unless the type accepts NULL", {
   f <- fn(x = int[1], ~ int[1], { x })
   expect_identical(problem_paths(f()), "x")
@@ -62,6 +69,18 @@ test_that("a typed function works away from the global environment", {
 test_that("fn rejects malformed declarations", {
   expect_error(fn(x = int[1]), "exactly one body")
   expect_error(fn(x = int[1], ~ int[1], ~ chr[1], { x }), "one return-type")
+})
+
+test_that("fn rejects argument names that collide with its own internals", {
+  reserved <- c(".probs_", ".types_", ".ret_", ".result_", ".r_", ".missing_")
+  for (n in reserved) {
+    call <- bquote(fn(int[1], ~ int[1], { 1L }))
+    names(call)[2] <- n
+    expect_error(eval(call), "reserved")
+  }
+  # the exact repro from the bug report: a second argument used to silently
+  # overwrite the first through the shared internal temp variable
+  expect_error(fn(.r_ = int[1], y = int[1], ~ int[1], { .r_ }), "reserved")
 })
 
 test_that("printing shows the signature", {

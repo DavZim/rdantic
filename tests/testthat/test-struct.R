@@ -46,6 +46,24 @@ test_that("assignment runs the field's type", {
   expect_error(a$name <- 42, class = "typed_error")
 })
 
+test_that("[<- runs the field's type just like $<- and [[<-", {
+  U <- mk_user()
+  a <- U(id = 1, name = "Ada")
+  a["name"] <- "Grace"
+  expect_identical(a$name, "Grace")
+  expect_error(a["name"] <- list(42), class = "typed_error")
+  expect_true(is_valid(U, a))
+})
+
+test_that("[<- can set several fields at once, each validated", {
+  U <- mk_user()
+  a <- U(id = 1, name = "Ada")
+  a[c("id", "name")] <- list(2L, "Grace")
+  expect_identical(a$id, 2L)
+  expect_identical(a$name, "Grace")
+  expect_error(a[c("id", "name")] <- list("nope", "Grace"), class = "typed_error")
+})
+
 test_that("a field that was never declared cannot be invented", {
   U <- mk_user()
   a <- U(id = 1, name = "Ada")
@@ -130,6 +148,12 @@ test_that("an unresolvable reference is a typed error", {
 test_that("redefining a struct warns", {
   struct("TDrift", a = int[1])
   expect_warning(struct("TDrift", a = chr[1]), "redefined")
+})
+
+test_that("struct rejects field names that collide with its own internals", {
+  expect_error(struct("TArgsField", .args = int[1]), "reserved")
+  expect_error(struct("TSpecField", .spec_ = int[1]), "reserved")
+  expect_error(struct("TSpecEnvField", .spec_env_ = int[1]), "reserved")
 })
 
 test_that("printing shows the fields", {
