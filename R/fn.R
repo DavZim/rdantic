@@ -136,63 +136,48 @@ fn <- function(...) {
   ret <- if (length(ret_i)) as_type(eval(exprs[[ret_i]][[2]], env)) else
     anything
 
-  checks <- lapply(names(types), function(n) {
-    if (n == "...")
-      return(bquote(
-        .probs_ <- c(.probs_, .check_dots(.types_[["..."]], list(...)))
-      ))
-    sym <- as.name(n)
-    val <- if (isTRUE(.spec(types[[n]])$has_default)) sym else
-      bquote(if (missing(.(sym))) .missing_ else .(sym))
-    bquote({
-      .r_ <- .check_arg(.types_[[.(n)]], .(val), .(n))
-      if (.is_bad(.r_)) .probs_ <- c(.probs_, unclass(.r_)) else
-        .(sym) <- .r_
-    })
-  })
-
   f <- function() NULL
   formals(f) <- lapply(types, function(t) {
     s <- .spec(t)
     if (isTRUE(s$has_default)) s$default else quote(expr = )
   })
-  # an explicit return() inside the body would otherwise unwind straight out
-  # of f(), skipping the return-type check below; shadowing return() to
-  # invoke a restart lets the wrapping .check_arg() still see the value
-  guarded_body <- bquote(withRestarts(
-    {
-      return <- function(value) invokeRestart(".rdantic_return_", value)
-      .(exprs[[body_i]])
-    },
-    .rdantic_return_ = function(value) value
-  ))
+  body(f) <- exprs[[body_i]]
+  environment(f) <- env
+  user_body <- f
+
+  # Validation owns its bindings; user code runs in its own function frame.
+  run <- function(frame, call) {
+    args <- list()
+    probs <- list()
+    .entry({
+      for (n in names(types)) {
+        if (n == "...") {
+          dots <- eval(quote(base::list(...)), frame)
+          probs <- c(probs, .check_dots(types[[n]], dots))
+          args <- c(args, dots)
+        } else {
+          absent <- !isTRUE(.spec(types[[n]])$has_default) &&
+            eval(as.call(list(base::missing, as.name(n))), frame)
+          value <- if (absent) .missing_ else get(n, frame, inherits = FALSE)
+          value <- .check_arg(types[[n]], value, n)
+          if (.is_bad(value)) probs <- c(probs, unclass(value)) else
+            args[n] <- list(value)
+        }
+      }
+    })
+    if (length(probs)) .abort(probs, .fn_name(call))
+    # quote=TRUE passes language objects as values instead of evaluating them.
+    result <- withVisible(do.call(user_body, args, quote = TRUE))
+    value <- .entry(.check_arg(ret, result$value, "<return>"))
+    if (.is_bad(value)) .abort(value, .fn_name(call))
+    if (result$visible) value else invisible(value)
+  }
+  checked_call <- as.call(list(run, quote(base::environment()), quote(base::sys.call())))
   body(f) <- bquote({
-    if (isTRUE(getOption("rdantic.check", TRUE))) {
-      .probs_ <- list()
-      .entry(.(as.call(c(as.name("{"), checks))))
-      if (length(.probs_)) .abort(.probs_, .fn_name(sys.call()))
-      .result_ <- .entry(.check_arg(.ret_, .(guarded_body), "<return>"))
-      if (.is_bad(.result_)) .abort(.result_, .fn_name(sys.call()))
-      .result_
-    } else .(exprs[[body_i]])
+    if (base::isTRUE(base::getOption("rdantic.check", TRUE)))
+      .(checked_call)
+    else .(exprs[[body_i]])
   })
-  fenv <- new.env(parent = env)
-  fenv$.types_ <- types
-  fenv$.ret_ <- ret
-  # the generated body closes over the caller's environment, which cannot see
-  # rdantic's namespace, so the helpers it calls travel with it
-  helpers <- environment(fn)
-  for (h in c(
-    ".entry",
-    ".abort",
-    ".is_bad",
-    ".check_arg",
-    ".check_dots",
-    ".fn_name",
-    ".missing_"
-  ))
-    assign(h, get(h, envir = helpers), envir = fenv)
-  environment(f) <- fenv
   attr(f, "types") <- types
   attr(f, "ret") <- ret
   class(f) <- c("typed_fn", "function")

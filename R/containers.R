@@ -186,7 +186,7 @@ map_of <- function(t) .map_of_any(as_type(t))
         return(.bad(path, name, .got(x), "every key must be named"))
       validate <- .spec(t)$validate
       out <- vector("list", length(x))
-      names(out) <- names(x)
+      names(out) <- if (length(x)) names(x) else character()
       probs <- list()
       for (i in seq_along(x)) {
         r <- validate(x[[i]], paste0(path, "$", names(x)[i]))
@@ -261,6 +261,11 @@ frame <- function(..., .extra = c("ignore", "forbid")) {
   if (!length(cols) || is.null(names(cols)) || any(!nzchar(names(cols))))
     stop("frame() needs named columns: frame(id = int, ...)")
   name <- sprintf("frame(%s)", paste(names(cols), collapse = ", "))
+  cell_schema <- function(s) {
+    if (identical(s$type, "array")) return(s$items)
+    if (!is.null(s$anyOf)) s$anyOf <- lapply(s$anyOf, cell_schema)
+    s
+  }
   new_type(
     name,
     validate = function(x, path) {
@@ -321,10 +326,7 @@ frame <- function(..., .extra = c("ignore", "forbid")) {
         items = list(
           type = "object",
           # a row cell is one scalar value, not the whole column's vector shape
-          properties = lapply(cols, function(c) {
-            s <- .spec(c)$schema()
-            if (identical(s$type, "array")) s$items else s
-          })
+          properties = lapply(cols, function(c) cell_schema(.spec(c)$schema()))
         )
       )
   )

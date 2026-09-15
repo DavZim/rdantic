@@ -417,7 +417,7 @@ desc <- function(t, description) {
     stop("desc() needs a single string description")
   s <- .spec(t)
   inner_schema <- s$schema
-  s$schema <- function() modifyList(inner_schema(), list(description = description))
+  s$schema <- function() utils::modifyList(inner_schema(), list(description = description))
   .rebuild(s)
 }
 
