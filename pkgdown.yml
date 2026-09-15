@@ -1,8 +1,16 @@
 pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
-articles: {}
-last_built: 2026-09-15T09:59Z
+articles:
+  containers: containers.html
+  errors-and-validation: errors-and-validation.html
+  extending-rdantic: extending-rdantic.html
+  json-and-schemas: json-and-schemas.html
+  structs: structs.html
+  temporal-types: temporal-types.html
+  typed-functions: typed-functions.html
+  types-in-depth: types-in-depth.html
+last_built: 2026-09-15T12:37Z
 urls:
   reference: https://davzim.github.io/rdantic/reference
   article: https://davzim.github.io/rdantic/articles

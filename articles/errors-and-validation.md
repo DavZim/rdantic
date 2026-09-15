@@ -1,0 +1,105 @@
+# Error handling and validation
+
+``` r
+
+library(rdantic)
+#> 
+#> Attaching package: 'rdantic'
+#> The following object is masked from 'package:graphics':
+#> 
+#>     frame
+#> The following object is masked from 'package:base':
+#> 
+#>     date
+```
+
+Every validation failure in rdantic – from a bare type, a struct, or a
+typed function – has the same shape: a list of problems, each naming the
+path where it occurred, what was expected, what arrived, and (often) a
+hint about why. This vignette covers the three ways to get at that
+information, and when to reach for each.
+
+## Errors are machine-readable
+
+By default, a failed validation throws a condition of class
+`typed_error` whose `$problems` field is a list of `path` / `expected` /
+`got` / `hint` records – so tooling can consume it, not just people.
+
+``` r
+
+User <- struct("User", id = int[1], name = chr[1])
+
+tryCatch(User(id = "x", name = 1), typed_error = function(e)
+  data.frame(
+    path     = vapply(e$problems, `[[`, "", "path"),
+    expected = vapply(e$problems, `[[`, "", "expected"),
+    got      = vapply(e$problems, `[[`, "", "got")
+  ))
+#>    path expected        got
+#> 1   $id   int[1] chr[1] "x"
+#> 2 $name   chr[1]   num[1] 1
+```
+
+Because `typed_error` is a distinct condition class,
+[`tryCatch()`](https://rdrr.io/r/base/conditions.html) can single it out
+from other errors a call might raise.
+
+## Validating without throwing
+
+When wrong input is *expected* rather than exceptional – a web form, a
+file upload, a config file – throwing on every bad value is the wrong
+shape.
+[`try_parse()`](https://davzim.github.io/rdantic/reference/try_parse.md)
+returns the same problem records instead of raising them:
+
+``` r
+
+r <- try_parse(User, list(id = 1.5, name = "Ada"))
+r$ok
+#> [1] FALSE
+str(r$problems[[1]])
+#> List of 4
+#>  $ path    : chr "$id"
+#>  $ expected: chr "int[1]"
+#>  $ got     : chr "num[1] 1.5"
+#>  $ hint    : chr "not a whole number"
+```
+
+[`try_parse()`](https://davzim.github.io/rdantic/reference/try_parse.md)
+returns a list with `ok`, `value` (the validated/coerced value when `ok`
+is `TRUE`) and `problems` (always a list, empty when there is nothing to
+report).
+
+## A yes/no answer
+
+When only “is this valid” matters, not why,
+[`is_valid()`](https://davzim.github.io/rdantic/reference/is_valid.md)
+skips building any problem detail and returns a plain `TRUE`/`FALSE`:
+
+``` r
+
+is_valid(User, list(id = 1, name = "Ada"))
+#> [1] TRUE
+is_valid(User, list(id = 1.5, name = "Ada"))
+#> [1] FALSE
+```
+
+## Picking one
+
+| Situation | Use |
+|----|----|
+| Wrong input is a bug in the caller | let it throw, or `tryCatch(..., typed_error = ...)` |
+| Wrong input is routine (forms, uploads, config) | `try_parse(T, x)` |
+| Only need a yes/no answer | `is_valid(T, x)` |
+| The type is in a variable, not a literal | `parse_as(T, x)` (same as `T(x)`) |
+
+## Turning checks off
+
+Validation has a real, if small, cost.
+[`fn()`](https://davzim.github.io/rdantic/reference/fn.md) checks can be
+disabled globally with `options(rdantic.check = FALSE)` once a typed
+function’s contract is trusted – see
+[`vignette("typed-functions")`](https://davzim.github.io/rdantic/articles/typed-functions.md).
+There is no equivalent switch for structs or bare types: their whole
+purpose is that an instance can never become invalid, so disabling their
+checks is not offered.
