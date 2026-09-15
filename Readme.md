@@ -1,6 +1,11 @@
 # rdantic
 
 
+<!-- badges: start -->
+
+[![R-CMD-check](https://github.com/DavZim/rdantic/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DavZim/rdantic/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 **Declared types, checked at the boundary.** pydantic’s idea, in base R.
 
 > **Status: proof of concept.** No S4, no R6, no code generation —
