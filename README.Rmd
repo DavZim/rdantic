@@ -197,6 +197,16 @@ id_t    <- int[1][. > 0]
 email_t <- chr[1][grepl("@", ., fixed = TRUE)]
 ```
 
+Use them exactly like any other type -- call them to validate:
+
+```{r, error=TRUE}
+id_t(1)
+id_t(c(0, 1))
+
+email_t("something@example.com")
+email_t("This is not an email")
+```
+
 A type is callable: calling it validates a value and hands it back, coerced when that
 loses nothing.
 
@@ -233,6 +243,17 @@ int[1](c(1, 2))
 
 The `[1]` matters more than it looks: most bugs from R's recycling rules come from a
 vector arriving where one value was meant.
+
+For a range rather than an exact length, use `length(.)`: inside `[ ]`, `.` is bound to
+the whole vector, not one element at a time, so `length(.)` is the vector's length.
+
+```{r, error=TRUE}
+int[length(.) <= 3](c(1, 2))
+int[length(.) <= 3](c(1, 2, 3, 4))
+
+int[length(.) >= 10](1:10)
+int[length(.) >= 10](1:5)
+```
 
 ## Constraints
 

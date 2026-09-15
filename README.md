@@ -333,6 +333,24 @@ id_t    <- int[1][. > 0]
 email_t <- chr[1][grepl("@", ., fixed = TRUE)]
 ```
 
+Use them exactly like any other type – call them to validate:
+
+``` r
+id_t(1)
+#> [1] 1
+id_t(c(0, 1))
+#> Error:
+#> ! 1 validation problem in int[1][. > 0]
+#>   <value>  expected int[1][. > 0], got num[2]  -- length is 2, not 1
+
+email_t("something@example.com")
+#> [1] "something@example.com"
+email_t("This is not an email")
+#> Error:
+#> ! 1 validation problem in chr[1][grepl("@", ., fixed = TRUE)]
+#>   <value>  expected chr[1][grepl("@", ., fixed = TRUE)], got chr[1] "This is not an email"
+```
+
 A type is callable: calling it validates a value and hands it back,
 coerced when that loses nothing.
 
@@ -392,6 +410,26 @@ int[1](c(1, 2))
 
 The `[1]` matters more than it looks: most bugs from R’s recycling rules
 come from a vector arriving where one value was meant.
+
+For a range rather than an exact length, use `length(.)`: inside `[ ]`,
+`.` is bound to the whole vector, not one element at a time, so
+`length(.)` is the vector’s length.
+
+``` r
+int[length(.) <= 3](c(1, 2))
+#> [1] 1 2
+int[length(.) <= 3](c(1, 2, 3, 4))
+#> Error:
+#> ! 1 validation problem in int[length(.) <= 3]
+#>   <value>  expected int[length(.) <= 3], got num[4]
+
+int[length(.) >= 10](1:10)
+#>  [1]  1  2  3  4  5  6  7  8  9 10
+int[length(.) >= 10](1:5)
+#> Error:
+#> ! 1 validation problem in int[length(.) >= 10]
+#>   <value>  expected int[length(.) >= 10], got int[5]
+```
 
 ## Constraints
 
