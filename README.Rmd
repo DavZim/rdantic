@@ -1,14 +1,14 @@
 ---
-title: "rdantic"
-format: gfm
-execute:
-  echo: true
-  warning: false
-knitr:
-  opts_chunk:
-    comment: "#>"
-    collapse: true
+output: github_document
 ---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE
+)
+```
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/DavZim/rdantic/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DavZim/rdantic/actions/workflows/R-CMD-check.yaml)
@@ -30,9 +30,7 @@ library(rdantic)   # base R only; jsonlite is needed for the JSON helpers
 
 ## TL;DR
 
-```{r}
-#| error: true
-
+```{r, error=TRUE}
 # define a struct with typed fields, optional fields, defaults and descriptions
 User <- struct(
   .name = "User",
@@ -65,14 +63,12 @@ greet_wrong(ada)
 ```
 
 Details about the types, structs, functions and JSON follow.
-```{r}
-#| error: true
+```{r, error=TRUE}
 int[1][. > 0](5)                          # a type is a value: calling it validates + coerces
 int[1][. > 0](-1)
 ```
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 ada$role                                  # "user" -- filled in by %default%
 ada$age <- "old"                          # instances stay valid: checked on assignment too
 ```
@@ -82,8 +78,7 @@ budget <- map_of(int[1][. > 0])           # a map: any keys, one value type
 budget(list(cpu = 4, memory = 16))
 ```
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 from_json(User, '{"id": 1, "name": "Ada"}')
 from_json(User, '{"id": -1, "name": "Ada"}')  # JSON in, validated against the same declaration
 ```
@@ -115,8 +110,7 @@ a value that was the wrong shape all along.
 
 Declare what the data *is*, once:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 Order <- struct("Order",                  # name, then one `field = type` per column
   id         = int[1][. > 0],
   qty        = int[1][. > 0],
@@ -139,8 +133,7 @@ str(order$id)                            # the double 1042 arrived as an integer
 Instances stay valid for their whole life, and a typed function can neither be called
 nor return the wrong thing:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 order$qty <- 0
 
 net <- fn(o = Order, ~ num[1][. >= 0], {  # arg = type, ..., ~ return type, then the body
@@ -167,8 +160,7 @@ to_json(schema(Extraction))               # schema(T) builds a JSON Schema; to_j
 Send that schema as the response format; whatever comes back goes through `from_json()`
 — one declaration on both ends, so a reply that ignores the schema is still caught.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 reply <- '{"name": "Ada", "age": -1, "tags": ["r", "stats"]}'
 from_json(Extraction, reply)              # from_json(T, txt): parse JSON text, validate against T
 ```
@@ -208,8 +200,7 @@ email_t <- chr[1][grepl("@", ., fixed = TRUE)]
 A type is callable: calling it validates a value and hands it back, coerced when that
 loses nothing.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 int(c(1, 2, 3))          # whole doubles  -> integer
 num(2L)                  # integer        -> double
 chr(factor("a"))         # factor         -> character
@@ -223,8 +214,7 @@ the value. That shape is the same everywhere in the system.
 
 Want no coercion at all? Values must then already be the right R type:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 options(rdantic.strict = TRUE)
 int(1)
 options(rdantic.strict = FALSE)
@@ -235,8 +225,7 @@ options(rdantic.strict = FALSE)
 R's central data structure is the vector, so a type without a length is a type of
 vectors. `T[n]` fixes the length; `T[1]` is a scalar.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 int[3](c(1, 2, 3))
 int[3](c(1, 2))
 int[1](c(1, 2))
@@ -250,8 +239,7 @@ vector arriving where one value was meant.
 Anything inside `[ ]` that mentions `.` is a predicate over the value. It must return
 `TRUE` for every element. Constraints and lengths chain in any order.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 num[. > 0](c(1, 2))
 num[. > 0](c(1, -2))
 
@@ -269,8 +257,7 @@ reader the rule that was broken, not just that one was.
 `A | B` accepts either. `T | NULL` is the idiom for optional. `%default%` attaches a
 default value, used by structs and typed functions when a value is not supplied.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 (int[1] | chr[1])(7)
 (int[1] | chr[1])("seven")
 (int[1] | chr[1])(TRUE)
@@ -286,8 +273,7 @@ int[1] | NULL %default% NULL              # a default on either side applies to 
 R's other quiet failure modes: a `Date` is a number wearing a class, a factor is an
 integer wearing labels, and `NA` sails through every operator. Each gets a type.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 date("2024-05-17")                        # ISO-8601 is unambiguous, so it is parsed
 date("17/05/2024")
 num(Sys.Date())                           # ... but a Date is never silently a number
@@ -298,8 +284,7 @@ no_na(num)(c(1, NA))
 When nothing built in fits, `type_from()` takes a plain predicate and an optional
 coercion:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 # type_from(name, predicate, coerce = NULL)
 hex <- type_from("hex", function(x) is.character(x) && all(grepl("^#[0-9a-f]{6}$", x)))
 hex("#00ff99")
@@ -313,8 +298,7 @@ a failure is reported by key rather than by position — this is what a JSON obj
 arbitrary keys parses into. `list_of()` given one type is the array counterpart: it only
 accepts an unnamed list, so the two never overlap.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 budget <- map_of(int[1][. > 0])
 
 budget(list(cpu = 4, memory = 16))
@@ -324,8 +308,7 @@ budget(list(cpu = 4, memory = 0, disk = "big"))
 Name the arguments of `list_of()` instead and you get a third shape: a fixed key set with
 one rule per key — still a plain named list on the way out, with no class and no struct name.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 limits <- list_of(cpu = int[1][0 < . & . < 12], memory = int[1][0 < . & . < 128])
 limits
 
@@ -369,8 +352,7 @@ str(ada$id)                              # coerced to integer on the way in
 
 A field is required unless it has a default or accepts `NULL`. Every problem is reported:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 User(name = 42, email = "nope", role = "god")
 ```
 
@@ -378,8 +360,7 @@ Fields are validated on assignment too, and the object is sealed — a typo cann
 invent a field, or quietly read a different one. `$<-`, `[[<-` and `[<-` all run the same
 check, so there is no assignment form that skips it:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 ada$age <- 36L
 ada$age
 ada$age <- "thirty-six"
@@ -391,8 +372,7 @@ ada$nam
 A field name that collides with rdantic's own internals (like `.args`) is rejected when
 the struct is declared:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 struct("Broken", .args = int[1])
 ```
 
@@ -427,8 +407,7 @@ team$members[[1]]$friend$name
 
 Three mistakes at three depths, one error:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 Team(
   lead    = list(id = 1, name = "Ada", email = "ada.lovelace"),
   members = list(list(id = 2, name = "Bob", email = "b@b", age = 34.5)),
@@ -475,8 +454,7 @@ UserPatch(name = "Grace")
 When parsing from a list, unknown keys are ignored by default (as in pydantic, and so
 that JSON written from a subclass still parses as the parent). A struct can forbid them:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 Strict <- struct("Strict", x = int[1], .extra = "forbid")
 from_list(Strict, list(x = 1, y = 2))     # from_list(T, x): parse/validate a plain list as T
 ```
@@ -484,8 +462,7 @@ from_list(Strict, list(x = 1, y = 2))     # from_list(T, x): parse/validate a pl
 `frame()` has the same `.extra`, enforced the same way whether the rows arrive as a
 data.frame already or as JSON that gets reshaped into one:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 Rows <- frame(id = int, .extra = "forbid")
 Rows(data.frame(id = 1L, extra = 2))
 from_json(Rows, '[{"id": 1, "extra": 2}]')
@@ -497,8 +474,7 @@ Types sit where R would put defaults; an unnamed formula `~ T` declares the retu
 the last unnamed expression is the body. Defaults use `%default%`; arguments whose type
 accepts `NULL` may be omitted.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 greet <- fn(name = chr[1], greeting = chr[1] %default% "Hello", ~ chr[1], {
   paste0(greeting, ", ", name, "!")
 })
@@ -511,8 +487,7 @@ greet(c("Ada", "Bob"))
 The return value is checked as well — a typed function cannot leak a wrong result, and an
 explicit `return()` is checked exactly like a value that falls through:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 half <- fn(x = int[1], ~ int[1], { x / 2 })
 half(4)                                  # 2 is a whole double: coerces to 2L
 half(3)                                  # 1.5 is not an int
@@ -524,16 +499,14 @@ early(-1)                                # return()'s value is checked too
 An argument name that collides with rdantic's own internals (like `.probs_`) is
 rejected when the function is declared, rather than silently shadowed:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 fn(.probs_ = int[1], ~ int[1], { .probs_ })
 ```
 
 Give `...` a type to check everything passed through it. Every bad argument is reported
 in one error, as with structs:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 log_line <- fn(level = one_of("info", "warn"), ... = chr[1], ~ chr[1], {
   paste0("[", level, "] ", paste(..., collapse = " "))
 })
@@ -582,8 +555,7 @@ invoice(order, rule_for("bulk"))
 The `clearance` rule is well-typed on the way in and wrong on the way out. Nothing
 catches it until the arithmetic has already run:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 invoice(order, rule_for("clearance"))
 ```
 
@@ -592,8 +564,7 @@ three) and the stage (`<return>`), not the outer call the user made. Compare the
 three places the same pipeline can break — each one is caught as early as it possibly
 can be:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 rule_for("half off")                     # (1) argument, at the door
 invoice(order, function(o) 0)            # (2) argument: a function, but not a typed one
 invoice(payload, rule_for("bulk"))       # (2) argument: raw list, parsed then rejected
@@ -602,8 +573,7 @@ invoice(payload, rule_for("bulk"))       # (2) argument: raw list, parsed then r
 And a factory that forgets to return a function is caught by its own return type,
 before anyone can call the result:
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 broken_for <- fn(kind = chr[1], ~ pricing_rule, { toupper(kind) })
 broken_for("bulk")
 ```
@@ -622,8 +592,7 @@ to_json(grace)
 arrays of objects as data frames, because the types accept those shapes — there is no
 separate JSON mode.
 
-```{r}
-#| error: true
+```{r, error=TRUE}
 team2 <- from_json(Team, to_json(team))
 str(team2$roster)
 from_json(User, '{"id": 1.5, "name": ["a", "b"], "email": "x@y"}')

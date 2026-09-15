@@ -1,5 +1,3 @@
-# rdantic
-
 
 <!-- badges: start -->
 
@@ -11,12 +9,20 @@
 > **Status: proof of concept.** No S4, no R6, no code generation —
 > closures, attributes and plain lists.
 
-> **Feedback wanted!**
+> **Feedback wanted\!**
 
 Concept by humans, implemented by AI.
 
 ``` r
 library(rdantic)   # base R only; jsonlite is needed for the JSON helpers
+#> 
+#> Attaching package: 'rdantic'
+#> The following object is masked from 'package:graphics':
+#> 
+#>     frame
+#> The following object is masked from 'package:base':
+#> 
+#>     date
 ```
 
 ## TL;DR
@@ -148,14 +154,14 @@ from_json(User, '{"id": -1, "name": "Ada"}')  # JSON in, validated against the s
 #>   $id  expected int[1][. > 0], got int[1] -1L
 ```
 
-|  |  |
-|----|----|
-| **Types are values** | `int[1]`, `num[. > 0]`, `chr[1] \| NULL` — built from `[` and `\|`, no new syntax |
-| **Length is part of the type** | `int` is any integer vector, `int[1]` is exactly one |
-| **Every problem, with a path** | not the first failure — all of them, each saying where |
-| **Lossless coercion only** | `1` → `1L` yes; `1.5` → `1L` no; `"1"` → `1L` never |
-| **Records and functions** | `struct()` for validated objects, `fn()` for typed functions |
-| **JSON in, JSON out** | `from_json()`, `to_json()`, `schema()` |
+|                                |                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| **Types are values**           | `int[1]`, `num[. > 0]`, `chr[1] \\| NULL` — built from `[` and `\\|`, no new syntax |
+| **Length is part of the type** | `int` is any integer vector, `int[1]` is exactly one                                |
+| **Every problem, with a path** | not the first failure — all of them, each saying where                              |
+| **Lossless coercion only**     | `1` → `1L` yes; `1.5` → `1L` no; `"1"` → `1L` never                                 |
+| **Records and functions**      | `struct()` for validated objects, `fn()` for typed functions                        |
+| **JSON in, JSON out**          | `from_json()`, `to_json()`, `schema()`                                              |
 
 ## Motivation
 
@@ -535,11 +541,10 @@ to_json(limits(list(cpu = 4L, memory = 16L)))
 #> }
 ```
 
-Missing keys are reported, `%default%` fills them in, and
-`.extra = "forbid"` refuses unknown ones — the same record rules
-`struct()` uses. Reach for a struct when the record deserves a name, a
-class and inheritance; reach for `list_of(a = T, ...)` when it is just a
-shape.
+Missing keys are reported, `%default%` fills them in, and `.extra =
+"forbid"` refuses unknown ones — the same record rules `struct()` uses.
+Reach for a struct when the record deserves a name, a class and
+inheritance; reach for `list_of(a = T, ...)` when it is just a shape.
 
 ## Records: `struct()`
 
@@ -1081,69 +1086,69 @@ schema(age)
 
 ## Cheat sheet
 
-| Want | Write |
-|----|----|
-| integer / double / string / logical vector | `int`, `num`, `chr`, `lgl` |
-| exactly n elements | `T[n]` |
-| constraint | `T[. > 0]`, `chr[1][nchar(.) < 20]` |
-| optional | `T \| NULL`, `opt(T)`, `opt("StructName")` |
-| either | `A \| B` |
-| enum | `one_of("a", "b")` |
-| date / time / factor | `date`, `datetime`, `fct("a", "b")` |
-| no missing values | `no_na(T)` |
-| custom type | `type_from("name", predicate, coerce)` |
-| list of | `list_of(T)` |
-| map (arbitrary keys) | `map_of(T)` |
-| named list with fixed keys | `list_of(a = T, b = T)` |
-| data.frame with typed columns | `frame(col = T, ...)` |
-| a function value | `anything[is.function(.)]`, `anything[inherits(., "typed_fn")]` |
-| default | `T %default% value` |
-| record | `struct("Name", f = T, ...)` |
-| field / struct description | `T %doc% "text"`, `struct(..., .description = "text")` |
-| forward / self reference | `ref("Name")`, `opt("Name")` |
-| subclass, partial | `extend(M, "Sub", ...)`, `partial(M)` |
-| reject unknown keys | `struct(..., .extra = "forbid")`, `frame(..., .extra = "forbid")` |
-| typed function | `fn(a = T, ..., ~ Ret, { body })` |
-| typed `...` | `fn(a = T, ... = T, ~ Ret, { body })` |
-| validate anything | `T(x)`, `parse_as(T, x)`, `from_list(M, x)` |
-| validate without throwing | `try_parse(T, x)`, `is_valid(T, x)` |
-| fields of a struct or value | `fields(M)`, `fields(x)` |
-| no coercion / no checks | `options(rdantic.strict = TRUE)`, `options(rdantic.check = FALSE)` |
-| JSON | `to_json(x)`, `from_json(T, txt)`, `schema(T)` |
-| catch errors | `tryCatch(..., typed_error = function(e) e$problems)` |
+| Want                                       | Write                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------ |
+| integer / double / string / logical vector | `int`, `num`, `chr`, `lgl`                                         |
+| exactly n elements                         | `T[n]`                                                             |
+| constraint                                 | `T[. > 0]`, `chr[1][nchar(.) < 20]`                                |
+| optional                                   | `T \\| NULL`, `opt(T)`, `opt("StructName")`                        |
+| either                                     | `A \\| B`                                                          |
+| enum                                       | `one_of("a", "b")`                                                 |
+| date / time / factor                       | `date`, `datetime`, `fct("a", "b")`                                |
+| no missing values                          | `no_na(T)`                                                         |
+| custom type                                | `type_from("name", predicate, coerce)`                             |
+| list of                                    | `list_of(T)`                                                       |
+| map (arbitrary keys)                       | `map_of(T)`                                                        |
+| named list with fixed keys                 | `list_of(a = T, b = T)`                                            |
+| data.frame with typed columns              | `frame(col = T, ...)`                                              |
+| a function value                           | `anything[is.function(.)]`, `anything[inherits(., "typed_fn")]`    |
+| default                                    | `T %default% value`                                                |
+| record                                     | `struct("Name", f = T, ...)`                                       |
+| field / struct description                 | `T %doc% "text"`, `struct(..., .description = "text")`             |
+| forward / self reference                   | `ref("Name")`, `opt("Name")`                                       |
+| subclass, partial                          | `extend(M, "Sub", ...)`, `partial(M)`                              |
+| reject unknown keys                        | `struct(..., .extra = "forbid")`, `frame(..., .extra = "forbid")`  |
+| typed function                             | `fn(a = T, ..., ~ Ret, { body })`                                  |
+| typed `...`                                | `fn(a = T, ... = T, ~ Ret, { body })`                              |
+| validate anything                          | `T(x)`, `parse_as(T, x)`, `from_list(M, x)`                        |
+| validate without throwing                  | `try_parse(T, x)`, `is_valid(T, x)`                                |
+| fields of a struct or value                | `fields(M)`, `fields(x)`                                           |
+| no coercion / no checks                    | `options(rdantic.strict = TRUE)`, `options(rdantic.check = FALSE)` |
+| JSON                                       | `to_json(x)`, `from_json(T, txt)`, `schema(T)`                     |
+| catch errors                               | `tryCatch(..., typed_error = function(e) e$problems)`              |
 
 ## How it works
 
-- **Types are closures** carrying a `spec` attribute (`name`,
-  `validate`, `schema`). `[.type` captures its argument with
-  `substitute()` — a bare number is a length, an expression mentioning
-  `.` is a predicate. `Ops.type` implements `|`. That is the whole DSL;
-  there is no parser.
-- **Structs compile to constructors** with real formals, built with
-  `formals<-` and `bquote()`. Instances are **plain lists** carrying
-  their own `spec`, so they copy on modify like every other R value and
-  `identical()`, `saveRDS()` and `str()` behave; `$<-` dispatches to a
-  method that validates and returns the updated value.
-- **Validators return the value itself**, or a `typed_problems` list of
-  records. The happy path allocates nothing beyond the value, and
-  `rdantic.strict` is read once per top-level validation rather than
-  once per element.
-- **`fn()` rewrites the function**: types come off the formals, one
-  check block is prepended, the return is wrapped. R 4.4 reserved
-  `declare()` for exactly this kind of annotation; when it gains
-  semantics, `fn()` can emit it and the checks move into the interpreter
-  without user code changing.
-- **Coercion is lossless only**: whole doubles → int (never out of
-  range), int → double, factor → character, ISO-8601 text → date. While
-  parsing JSON, also: unnamed list of scalars → vector, list of records
-  → data frame. Nothing else, ever.
+  - **Types are closures** carrying a `spec` attribute (`name`,
+    `validate`, `schema`). `[.type` captures its argument with
+    `substitute()` — a bare number is a length, an expression mentioning
+    `.` is a predicate. `Ops.type` implements `|`. That is the whole
+    DSL; there is no parser.
+  - **Structs compile to constructors** with real formals, built with
+    `formals<-` and `bquote()`. Instances are **plain lists** carrying
+    their own `spec`, so they copy on modify like every other R value
+    and `identical()`, `saveRDS()` and `str()` behave; `$<-` dispatches
+    to a method that validates and returns the updated value.
+  - **Validators return the value itself**, or a `typed_problems` list
+    of records. The happy path allocates nothing beyond the value, and
+    `rdantic.strict` is read once per top-level validation rather than
+    once per element.
+  - **`fn()` rewrites the function**: types come off the formals, one
+    check block is prepended, the return is wrapped. R 4.4 reserved
+    `declare()` for exactly this kind of annotation; when it gains
+    semantics, `fn()` can emit it and the checks move into the
+    interpreter without user code changing.
+  - **Coercion is lossless only**: whole doubles → int (never out of
+    range), int → double, factor → character, ISO-8601 text → date.
+    While parsing JSON, also: unnamed list of scalars → vector, list of
+    records → data frame. Nothing else, ever.
 
 ## Not in this proof of concept
 
-- Discriminated unions for polymorphic JSON (`{"type": "admin", ...}`
-  choosing the struct).
-- Generic structs (`Page(of = User)`).
-- Cross-field validators (`.check = function(self) ...`) and row-wise
-  constraints in `frame()` beyond predicates over a column.
-- Packaging all of this as an actual R package, with a namespace instead
-  of `source()`.
+  - Discriminated unions for polymorphic JSON (`{"type": "admin", ...}`
+    choosing the struct).
+  - Generic structs (`Page(of = User)`).
+  - Cross-field validators (`.check = function(self) ...`) and row-wise
+    constraints in `frame()` beyond predicates over a column.
+  - Packaging all of this as an actual R package, with a namespace
+    instead of `source()`.

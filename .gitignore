@@ -3,5 +3,6 @@
 .RData
 .Ruserdata
 
-Readme.html
+README.html
 docs
+inst/doc
