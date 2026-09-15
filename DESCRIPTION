@@ -11,6 +11,8 @@ Description: A proof-of-concept port of pydantic's central idea to R. Types are
     happens only where nothing can be lost, and every problem is reported with
     the path where it occurred.
 License: MIT + file LICENSE
+URL: https://github.com/DavZim/rdantic/, https://davzim.github.io/rdantic/
+BugReports: https://github.com/DavZim/rdantic/issues
 Encoding: UTF-8
 Depends:
     R (>= 4.1)
