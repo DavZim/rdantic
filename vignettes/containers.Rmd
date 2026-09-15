@@ -1,0 +1,109 @@
+---
+title: "Containers: lists, maps and frames"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Containers: lists, maps and frames}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(rdantic)
+```
+
+R has three shapes for "more than one of something", and rdantic has one container type
+for each: `list_of()` for an array, `map_of()` for arbitrary-key/one-value-type maps, and
+`frame()` for a data.frame with typed columns. `list_of()` also has a second form for a
+fixed key set. This vignette covers when to reach for which; see `vignette("structs")` for
+when a record deserves a name and a class instead.
+
+## `list_of(T)`: an array of one type
+
+`list_of(T)` accepts an unnamed list of any length, all elements of type `T`. A named
+list is rejected -- that is `map_of()`'s job, so the two never overlap.
+
+```{r, error = TRUE}
+tags <- list_of(chr[1])
+tags(list("a", "b"))
+tags(list(a = "x"))              # a named list is map_of(), not this
+```
+
+## `map_of(T)`: arbitrary keys, one value type
+
+`map_of(T)` is the map counterpart: any keys, one value type, kept by name. A failure is
+reported by key rather than by position -- and this is what a JSON object with arbitrary
+keys parses into (see `vignette("json-and-schemas")`).
+
+```{r, error = TRUE}
+budget <- map_of(int[1][. > 0])
+budget(list(cpu = 4, memory = 16))
+budget(list(cpu = 4, memory = 0, disk = "big"))
+map_of(int[1])(list(1, 2))       # unnamed input is list_of(), not this
+
+schema(budget)
+```
+
+## `list_of(a = T, b = T, ...)`: a fixed key set
+
+Name the arguments of `list_of()` instead of giving it one type, and it becomes a third
+shape: a fixed set of keys with one rule per key -- still a plain named list on the way
+out, with no class and no struct name.
+
+```{r, error = TRUE}
+limits <- list_of(cpu = int[1][0 < . & . < 12], memory = int[1][0 < . & . < 128])
+limits
+
+str(limits(list(cpu = 4, memory = 16)))
+limits(list(cpu = 16, memory = 512))
+limits(list(cpu = 4))                    # missing key, reported
+```
+
+Missing keys are reported, `%default%` fills them in, and `.extra = "forbid"` refuses
+unknown ones -- the same record rules `struct()` uses:
+
+```{r, error = TRUE}
+list_of(cpu = int[1], .extra = "forbid")(list(cpu = 1, junk = 2))
+```
+
+Reach for a struct (`vignette("structs")`) when the record deserves a name, a class and
+inheritance; reach for `list_of(a = T, ...)` when it is just a shape.
+
+## `frame()`: a data.frame with typed columns
+
+`frame()` describes a data.frame: each column is validated as a vector, so the usual
+length and constraint syntax applies to it. A column of the wrong length for the number
+of rows, or a missing column, is an error.
+
+```{r, error = TRUE}
+roster <- frame(id = int, name = chr)
+str(roster(data.frame(id = c(1, 2), name = c("Ada", "Bob"))))
+
+roster(data.frame(id = 1))               # missing column
+frame(id = int, .extra = "forbid")(data.frame(id = 1L, junk = 2))
+```
+
+While parsing JSON, an array of objects is reshaped into a data frame, and a row missing
+a key is reported by name instead of quietly producing a list column:
+
+```{r, error = TRUE}
+from_json(roster, '[{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bob"}]')
+from_json(roster, '[{"id": 1}]')
+nrow(from_json(roster, "[]"))
+```
+
+## Picking one
+
+| Shape of the data | Use |
+|---|---|
+| unnamed, any length, one element type | `list_of(T)` |
+| named, arbitrary keys, one value type | `map_of(T)` |
+| named, fixed keys, one rule each, no class needed | `list_of(a = T, b = T, ...)` |
+| rows and columns | `frame(col = T, ...)` |
+| a record that deserves a name, a class, inheritance | `struct("Name", field = T, ...)` |

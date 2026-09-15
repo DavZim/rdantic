@@ -1,0 +1,73 @@
+---
+title: "Dates and temporal types"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Dates and temporal types}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(rdantic)
+```
+
+R has three quiet failure modes this vignette's types guard against: a `Date` is a
+number wearing a class, a factor is an integer wearing labels, and a plain string is
+neither until something parses it. rdantic gives each of these its own type instead of
+letting them silently interoperate with plain numbers and strings.
+
+## Dates and datetimes
+
+`date` accepts `Date` vectors, `datetime` accepts `POSIXct` vectors. Unlike plain numbers,
+ISO-8601 text *is* parsed -- it is the one unambiguous serialization of an instant -- but
+never silently to `NA`: text that does not parse is an error, not a missing value.
+
+```{r, error = TRUE}
+date("2024-05-17")                        # ISO-8601 is unambiguous, so it is parsed
+date(as.Date("2024-05-17"))
+datetime("2024-05-17T09:30:00")
+
+date("17/05/2024")                        # wrong layout, not a silent NA
+date(19860)                               # a number is not a date
+num(Sys.Date())                           # ... and a date is never silently a number
+```
+
+Like any other type, a date can carry a length or be used inside a union or a container:
+
+```{r}
+date[1]                                   # exactly one date
+parse_as(date, c("2024-01-01", "2024-06-30"))
+```
+
+## Restricted factors
+
+`fct(a, b, ...)` accepts a factor with exactly those levels, and promotes character input
+whose values are all among them. Use `one_of()` (`vignette("types-in-depth")`) when a
+plain string should come out; use `fct()` when a factor with a fixed, ordered level set
+should.
+
+```{r, error = TRUE}
+size <- fct("low", "mid", "high")
+size("mid")                               # character, promoted to a factor
+levels(size(c("high", "low")))
+size("enormous")                          # not one of the declared levels
+
+fct()(factor("anything"))                 # fct() with no levels: any factor, no coercion
+```
+
+## Missing values
+
+`NA` sails through most R operators without complaint. `no_na(T)` wraps any type to
+additionally reject it -- see `vignette("types-in-depth")` for `no_na()` alongside the
+other combinators.
+
+```{r, error = TRUE}
+no_na(date)(as.Date(c("2024-01-01", NA)))
+```

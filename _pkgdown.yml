@@ -2,3 +2,19 @@ url: https://davzim.github.io/rdantic/
 template:
   bootstrap: 5
 
+articles:
+- title: Core concepts
+  navbar: Articles
+  contents:
+  - types-in-depth
+  - structs
+  - typed-functions
+  - json-and-schemas
+- title: Advanced topics
+  navbar: Articles
+  contents:
+  - containers
+  - errors-and-validation
+  - temporal-types
+  - extending-rdantic
+
