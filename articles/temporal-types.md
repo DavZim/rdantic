@@ -46,7 +46,7 @@ date(19860)                               # a number is not a date
 num(Sys.Date())                           # ... and a date is never silently a number
 #> Error:
 #> ! 1 validation problem in num
-#>   <value>  expected num, got date[1] "2026-09-15"  -- a <Date> is never silently unclassed
+#>   <value>  expected num, got date[1] "2026-09-16"  -- a <Date> is never silently unclassed
 ```
 
 Like any other type, a date can carry a length or be used inside a union
