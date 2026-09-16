@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,11 +89,11 @@
 <code class="sourceCode R"><span><span class="co"># define a struct with typed fields, optional fields, defaults and descriptions</span></span>
 <span><span class="va">User</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span></span>
 <span>  .name <span class="op">=</span> <span class="st">"User"</span>,</span>
-<span>  .description <span class="op">=</span> <span class="st">"A registered user."</span>,</span>
-<span>  id   <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span> <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Unique, positive identifier."</span>,</span>
-<span>  name <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Full name."</span>,</span>
-<span>  role <span class="op">=</span> <span class="fu"><a href="reference/one_of.html">one_of</a></span><span class="op">(</span><span class="st">"admin"</span>, <span class="st">"user"</span><span class="op">)</span> <span class="op"><a href="reference/grapes-default-grapes.html">%default%</a></span> <span class="st">"user"</span> <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Access level."</span>,</span>
-<span>  age  <span class="op">=</span> <span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">|</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Age in years, if known."</span></span>
+<span>  .description <span class="op">=</span> <span class="st">"A description of the structure User"</span>,</span>
+<span>  id   <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span>                            <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"The ID of the user."</span>,</span>
+<span>  name <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>                                   <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Full name of the user."</span>,</span>
+<span>  role <span class="op">=</span> <span class="fu"><a href="reference/one_of.html">one_of</a></span><span class="op">(</span><span class="st">"admin"</span>, <span class="st">"user"</span><span class="op">)</span> <span class="op"><a href="reference/grapes-default-grapes.html">%default%</a></span> <span class="st">"user"</span> <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Description of role."</span>,</span>
+<span>  age  <span class="op">=</span> <span class="op">(</span><span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">|</span> <span class="cn">NULL</span><span class="op">)</span>                          <span class="op"><a href="reference/desc.html">%doc%</a></span> <span class="st">"Age in years, if known."</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">User</span></span>
 <span><span class="co">#&gt; &lt;struct&gt; User</span></span>
@@ -122,22 +122,22 @@
 <span><span class="co">#&gt; {</span></span>
 <span><span class="co">#&gt;   "type": "object",</span></span>
 <span><span class="co">#&gt;   "title": "User",</span></span>
-<span><span class="co">#&gt;   "description": "A registered user.",</span></span>
+<span><span class="co">#&gt;   "description": "A description of the structure User",</span></span>
 <span><span class="co">#&gt;   "properties": {</span></span>
 <span><span class="co">#&gt;     "id": {</span></span>
 <span><span class="co">#&gt;       "type": "integer",</span></span>
-<span><span class="co">#&gt;       "description": "Unique, positive identifier."</span></span>
+<span><span class="co">#&gt;       "description": "The ID of the user."</span></span>
 <span><span class="co">#&gt;     },</span></span>
 <span><span class="co">#&gt;     "name": {</span></span>
 <span><span class="co">#&gt;       "type": "string",</span></span>
-<span><span class="co">#&gt;       "description": "Full name."</span></span>
+<span><span class="co">#&gt;       "description": "Full name of the user."</span></span>
 <span><span class="co">#&gt;     },</span></span>
 <span><span class="co">#&gt;     "role": {</span></span>
 <span><span class="co">#&gt;       "enum": [</span></span>
 <span><span class="co">#&gt;         "admin",</span></span>
 <span><span class="co">#&gt;         "user"</span></span>
 <span><span class="co">#&gt;       ],</span></span>
-<span><span class="co">#&gt;       "description": "Access level."</span></span>
+<span><span class="co">#&gt;       "description": "Description of role."</span></span>
 <span><span class="co">#&gt;     },</span></span>
 <span><span class="co">#&gt;     "age": {</span></span>
 <span><span class="co">#&gt;       "type": ["integer", "null"],</span></span>
@@ -509,7 +509,7 @@
 <span><span class="fu"><a href="reference/primitives.html">num</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>                           <span class="co"># ... but a Date is never silently a number</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! 1 validation problem in num</span></span>
-<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-15"  -- a &lt;Date&gt; is never silently unclassed</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-16"  -- a &lt;Date&gt; is never silently unclassed</span></span>
 <span><span class="fu"><a href="reference/fct.html">fct</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"high"</span><span class="op">)</span><span class="op">(</span><span class="st">"high"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] high</span></span>
 <span><span class="co">#&gt; Levels: low high</span></span>
@@ -1172,7 +1172,14 @@
 <li>Discriminated unions for polymorphic JSON (<code>{"type": "admin", ...}</code> choosing the struct).</li>
 <li>Generic structs (<code>Page(of = User)</code>).</li>
 <li>Cross-field validators (<code>.check = function(self) ...</code>) and row-wise constraints in <code><a href="reference/frame.html">frame()</a></code> beyond predicates over a column.</li>
-<li>Packaging all of this as an actual R package, with a namespace instead of <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code>.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="possible-extensions">Possible extensions<a class="anchor" aria-label="anchor" href="#possible-extensions"></a>
+</h2>
+<ul>
+<li>An actual ORM system for R</li>
+<li>Extension/examples to make it compatible with ellmer for structured output</li>
 </ul>
 </div>
 

@@ -1,5 +1,31 @@
 # Changelog
 
+## rdantic 0.2.1
+
+### Bug fixes
+
+- [`fn()`](https://davzim.github.io/rdantic/reference/fn.md): the typed
+  body now runs across an ordinary function-call boundary instead of a
+  shadowed [`return()`](https://rdrr.io/r/base/function.html) inside a
+  [`withRestarts()`](https://rdrr.io/r/base/conditions.html) frame. A
+  nested function’s own
+  [`return()`](https://rdrr.io/r/base/function.html) again returns to
+  its own caller instead of unwinding the whole typed function, and a
+  closure returned from a typed function stays callable afterwards
+  instead of erroring with `no 'restart' '.rdantic_return_' found`.
+- `[<-.typed_instance` now replaces through an ordinary base-list
+  assignment and validates the result, instead of coercing every
+  replacement value to a list first. `x["value"] <- list(3L)` now stores
+  `3L` (not `list(3L)`) for both constrained and unconstrained
+  (`anything`) fields, matching normal list-replacement semantics.
+- `map_of(T)` now serializes an empty map to
+  [`{}`](https://rdrr.io/r/base/Paren.html) instead of `[]`, matching
+  its `"object"` schema and the JSON produced for nonempty maps.
+- [`frame()`](https://davzim.github.io/rdantic/reference/frame.md)’s
+  generated schema now converts a nullable column’s cell schema through
+  its union branches, so a `T | NULL` column gets a scalar type in its
+  non-null branch instead of retaining the whole column’s array shape.
+
 ## rdantic 0.2.0
 
 ### Bug fixes

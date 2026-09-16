@@ -27,11 +27,11 @@ library(rdantic)   # base R only; jsonlite is needed for the JSON helpers
 # define a struct with typed fields, optional fields, defaults and descriptions
 User <- struct(
   .name = "User",
-  .description = "A registered user.",
-  id   = int[1][. > 0] %doc% "Unique, positive identifier.",
-  name = chr[1] %doc% "Full name.",
-  role = one_of("admin", "user") %default% "user" %doc% "Access level.",
-  age  = (int[1] | NULL) %doc% "Age in years, if known."
+  .description = "A description of the structure User",
+  id   = int[1][. > 0]                            %doc% "The ID of the user.",
+  name = chr[1]                                   %doc% "Full name of the user.",
+  role = one_of("admin", "user") %default% "user" %doc% "Description of role.",
+  age  = (int[1] | NULL)                          %doc% "Age in years, if known."
 )
 User
 #> <struct> User
@@ -60,22 +60,22 @@ to_json(schema(User))                     # descriptions land in the schema, not
 #> {
 #>   "type": "object",
 #>   "title": "User",
-#>   "description": "A registered user.",
+#>   "description": "A description of the structure User",
 #>   "properties": {
 #>     "id": {
 #>       "type": "integer",
-#>       "description": "Unique, positive identifier."
+#>       "description": "The ID of the user."
 #>     },
 #>     "name": {
 #>       "type": "string",
-#>       "description": "Full name."
+#>       "description": "Full name of the user."
 #>     },
 #>     "role": {
 #>       "enum": [
 #>         "admin",
 #>         "user"
 #>       ],
-#>       "description": "Access level."
+#>       "description": "Description of role."
 #>     },
 #>     "age": {
 #>       "type": ["integer", "null"],
@@ -521,7 +521,7 @@ date("17/05/2024")
 num(Sys.Date())                           # ... but a Date is never silently a number
 #> Error:
 #> ! 1 validation problem in num
-#>   <value>  expected num, got date[1] "2026-09-15"  -- a <Date> is never silently unclassed
+#>   <value>  expected num, got date[1] "2026-09-16"  -- a <Date> is never silently unclassed
 fct("low", "high")("high")
 #> [1] high
 #> Levels: low high
@@ -1266,8 +1266,12 @@ schema(age)
   constraints in
   [`frame()`](https://davzim.github.io/rdantic/reference/frame.md)
   beyond predicates over a column.
-- Packaging all of this as an actual R package, with a namespace instead
-  of [`source()`](https://rdrr.io/r/base/source.html).
+
+## Possible extensions
+
+- An actual ORM system for R
+- Extension/examples to make it compatible with ellmer for structured
+  output
 
 # Package index
 

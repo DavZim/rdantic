@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,6 +47,20 @@
       <small>Source: <a href="https://github.com/DavZim/rdantic/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="rdantic-021">rdantic 0.2.1<a class="anchor" aria-label="anchor" href="#rdantic-021"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-1"></a></h3>
+<ul><li>
+<code><a href="../reference/fn.html">fn()</a></code>: the typed body now runs across an ordinary function-call boundary instead of a shadowed <code><a href="https://rdrr.io/r/base/function.html" class="external-link">return()</a></code> inside a <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withRestarts()</a></code> frame. A nested function’s own <code><a href="https://rdrr.io/r/base/function.html" class="external-link">return()</a></code> again returns to its own caller instead of unwinding the whole typed function, and a closure returned from a typed function stays callable afterwards instead of erroring with <code>no 'restart' '.rdantic_return_' found</code>.</li>
+<li>
+<code>[&lt;-.typed_instance</code> now replaces through an ordinary base-list assignment and validates the result, instead of coercing every replacement value to a list first. <code>x["value"] &lt;- list(3L)</code> now stores <code>3L</code> (not <code>list(3L)</code>) for both constrained and unconstrained (<code>anything</code>) fields, matching normal list-replacement semantics.</li>
+<li>
+<code>map_of(T)</code> now serializes an empty map to <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{}</a></code> instead of <code>[]</code>, matching its <code>"object"</code> schema and the JSON produced for nonempty maps.</li>
+<li>
+<code><a href="../reference/frame.html">frame()</a></code>’s generated schema now converts a nullable column’s cell schema through its union branches, so a <code>T | NULL</code> column gets a scalar type in its non-null branch instead of retaining the whole column’s array shape.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="rdantic-020">rdantic 0.2.0<a class="anchor" aria-label="anchor" href="#rdantic-020"></a></h2>
 <div class="section level3">
