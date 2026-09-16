@@ -390,9 +390,13 @@ fields <- function(x) {
 #' k$tries
 #' try(k["state"] <- "exploded")
 `[<-.typed_instance` <- function(x, i, value) {
-  if (is.numeric(i)) i <- fields(x)[i]
-  vals <- if (length(i) > 1) as.list(value) else list(value)
-  for (k in seq_along(i)) x <- .set_field(x, i[[k]], vals[[k]])
+  candidate <- unclass(x)
+  if (missing(i)) candidate[] <- value else candidate[i] <- value
+  if (!identical(names(candidate), names(x)))
+    .abort_msg("Replacement must preserve the declared fields.")
+  selected <- if (missing(i)) names(x) else names(candidate[i])
+  for (n in unique(selected[!is.na(selected)]))
+    x <- .set_field(x, n, candidate[[n]])
   x
 }
 
