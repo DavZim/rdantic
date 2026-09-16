@@ -34,11 +34,11 @@ library(rdantic)   # base R only; jsonlite is needed for the JSON helpers
 # define a struct with typed fields, optional fields, defaults and descriptions
 User <- struct(
   .name = "User",
-  .description = "A registered user.",
-  id   = int[1][. > 0] %doc% "Unique, positive identifier.",
-  name = chr[1] %doc% "Full name.",
-  role = one_of("admin", "user") %default% "user" %doc% "Access level.",
-  age  = (int[1] | NULL) %doc% "Age in years, if known."
+  .description = "A description of the structure User",
+  id   = int[1][. > 0]                            %doc% "The ID of the user.",
+  name = chr[1]                                   %doc% "Full name of the user.",
+  role = one_of("admin", "user") %default% "user" %doc% "Description of role.",
+  age  = (int[1] | NULL)                          %doc% "Age in years, if known."
 )
 User
 
@@ -721,4 +721,8 @@ schema(age)
 * Generic structs (`Page(of = User)`).
 * Cross-field validators (`.check = function(self) ...`) and row-wise constraints in
   `frame()` beyond predicates over a column.
-* Packaging all of this as an actual R package, with a namespace instead of `source()`.
+
+## Possible extensions
+
+* An actual ORM system for R
+* Extension/examples to make it compatible with ellmer for structured output
