@@ -7,14 +7,15 @@
 as_type(x)
 }
 \arguments{
-\item{x}{A type, \code{NULL}, or a struct name.}
+\item{x}{A type, \code{NULL}, a struct name, or an S7 class.}
 }
 \value{
 A type.
 }
 \description{
 Types are values, so most of the API accepts either a type, \code{NULL} (meaning
-the null type) or a string (meaning a struct looked up by name).
+the null type), a string (meaning a struct looked up by name) or an S7
+class (see \code{\link[=s7_type]{s7_type()}}).
 }
 \examples{
 as_type(int)

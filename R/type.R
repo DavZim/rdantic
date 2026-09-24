@@ -60,9 +60,10 @@ new_type <- function(name, validate, schema = function() list(), ...) {
 #' Interpret a value as a type
 #'
 #' Types are values, so most of the API accepts either a type, `NULL` (meaning
-#' the null type) or a string (meaning a struct looked up by name).
+#' the null type), a string (meaning a struct looked up by name) or an S7
+#' class (see [s7_type()]).
 #'
-#' @param x A type, `NULL`, or a struct name.
+#' @param x A type, `NULL`, a struct name, or an S7 class.
 #' @return A type.
 #' @export
 #' @examples
@@ -72,6 +73,7 @@ new_type <- function(name, validate, schema = function() list(), ...) {
 as_type <- function(x) {
   if (inherits(x, "type")) return(x)
   if (is.null(x)) return(null_t)
+  if (.is_s7_class(x) || inherits(x, "S7_union")) return(.s7_prop_type(x))
   if (is.character(x) && length(x) == 1) return(ref(x))
   stop("not a type: ", deparse1(substitute(x)))
 }

@@ -7,7 +7,8 @@
 fields(x)
 }
 \arguments{
-\item{x}{A struct, an instance, or anything \code{\link[=as_type]{as_type()}} accepts.}
+\item{x}{A struct, an instance, an S7 class or object, or anything
+\code{\link[=as_type]{as_type()}} accepts.}
 }
 \value{
 A character vector, in declaration order.

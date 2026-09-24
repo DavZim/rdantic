@@ -14,7 +14,14 @@ to_list <- function(x) {
     lapply(
       stats::setNames(nm = fields(x)),
       function(f) to_list(.subset2(x, f))
-    ) else if (is.list(x) && !is.data.frame(x)) lapply(x, to_list) else x
+    ) else if (.is_s7_object(x))
+    lapply(
+      stats::setNames(nm = fields(x)),
+      function(f) to_list(S7::prop(x, f))
+    ) else if (
+    is.list(x) && !is.data.frame(x)
+  )
+    lapply(x, to_list) else x
 }
 
 #' Convert an instance to a list
@@ -86,8 +93,15 @@ to_json <- function(x, pretty = TRUE, ...) {
   if (inherits(x, "typed_instance")) {
     fs <- attr(x, "spec")$fields # the instance's own spec, never a name lookup
     return(lapply(
-      stats::setNames(nm = names(fs)),
+      stats::setNames(nm = .nm(fs)),
       function(f) .json_ready(.subset2(x, f), fs[[f]])
+    ))
+  }
+  if (.is_s7_object(x)) {
+    fs <- .s7_fields(attr(x, "S7_class"))
+    return(lapply(
+      stats::setNames(nm = .nm(fs)),
+      function(f) .json_ready(S7::prop(x, f), fs[[f]])
     ))
   }
   if (is.data.frame(x)) return(x)

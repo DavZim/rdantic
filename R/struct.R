@@ -120,26 +120,74 @@ struct <- function(
   # collide with them (e.g. a field called `name`, `parents` or `extra`).
   if (!is.character(.name) || length(.name) != 1)
     stop('struct() needs exactly one unnamed name: struct("User", ...)')
-  if (!is.null(.description) && (!is.character(.description) || length(.description) != 1))
-    stop("struct() needs .description to be a single string, or NULL")
-  extra <- match.arg(.extra)
-  fields <- list(...)
+  ctor <- .struct_ctor(
+    .name,
+    .struct_fields(list(...)),
+    .parents,
+    .description,
+    match.arg(.extra)
+  )
+  # scoped, so the previous constructor is not captured by this struct's closures
+  local({
+    prev <- get0(.name, envir = .registry, inherits = FALSE)
+    if (!is.null(prev) && !identical(.sig(.spec(prev)), .sig(.spec(ctor))))
+      warning(
+        sprintf(
+          "struct `%s` redefined; values and refs made earlier keep the previous definition",
+          .name
+        ),
+        call. = FALSE
+      )
+  })
+  assign(.name, ctor, envir = .registry)
+  ctor
+}
+
+#' Check and coerce a set of declared fields
+#'
+#' @param fields The `...` of a struct-like declaration.
+#' @return The same list, every entry passed through [as_type()].
+#' @keywords internal
+#' @examples
+#' names(rdantic:::.struct_fields(list(a = int[1])))
+.struct_fields <- function(fields) {
   nms <- names(fields)
   if (is.null(nms)) nms <- rep("", length(fields))
   if (length(fields) && any(!nzchar(nms)))
     stop("all struct fields must be named")
   .reject_reserved(nms, c(".args", ".spec_", ".spec_env_"), "field")
-  fields <- lapply(fields, as_type)
-  name <- .name
-  parents <- .parents
-  description <- .description
+  lapply(fields, as_type)
+}
+
+#' Build a struct constructor without registering it
+#'
+#' The part of [struct()] that makes the type. [s7_struct()] needs it without
+#' the name ever entering `.registry`, because the name there would resolve to
+#' something that builds instances rather than S7 objects.
+#'
+#' @param name The struct's name.
+#' @param fields A named list of types.
+#' @param parents The parent class names.
+#' @param description The schema `"description"`, or `NULL`.
+#' @param extra `"ignore"` or `"forbid"`.
+#' @return A constructor of class `typed_struct`.
+#' @keywords internal
+#' @examples
+#' rdantic:::.struct_ctor("Loose", list(a = int[1]), character(), NULL, "ignore")
+.struct_ctor <- function(name, fields, parents, description, extra) {
+  if (
+    !is.null(description) &&
+      (!is.character(description) || length(description) != 1)
+  )
+    stop("a struct's .description must be a single string, or NULL")
   spec <- list(name = name, fields = fields, parents = parents, extra = extra)
   spec$validate <- function(x, path) {
     if (inherits(x, name)) return(x)
     # instances are lists, so a *different* struct must not be parsed as one
     if (inherits(x, "typed_instance"))
       return(.bad(path, paste0("<", name, ">"), .got(x)))
-    if (is.list(x) && !is.data.frame(x)) return(.new_instance(spec, x, path, spec_env))
+    if (is.list(x) && !is.data.frame(x))
+      return(.new_instance(spec, x, path, spec_env))
     .bad(path, paste0("<", name, ">"), .got(x))
   }
   spec$schema <- function() {
@@ -148,7 +196,10 @@ struct <- function(
     c(
       header,
       list(
-        properties = lapply(fields, function(f) .spec(f)$schema()),
+        properties = lapply(
+          stats::setNames(nm = .nm(fields)),
+          function(n) .spec(fields[[n]])$schema()
+        ),
         required = as.list(.required_fields(fields)),
         additionalProperties = FALSE
       )
@@ -157,21 +208,7 @@ struct <- function(
   # instances carry this instead of `spec` itself: object.size() charges an
   # environment a small fixed cost rather than recursing into its contents
   spec_env <- list2env(spec, parent = emptyenv())
-  ctor <- .make_struct(spec, spec_env)
-  # scoped, so the previous constructor is not captured by this struct's closures
-  local({
-    prev <- get0(name, envir = .registry, inherits = FALSE)
-    if (!is.null(prev) && !identical(.sig(.spec(prev)), .sig(spec)))
-      warning(
-        sprintf(
-          "struct `%s` redefined; values and refs made earlier keep the previous definition",
-          name
-        ),
-        call. = FALSE
-      )
-  })
-  assign(name, ctor, envir = .registry)
-  ctor
+  .make_struct(spec, spec_env)
 }
 
 #' Compile a struct spec into a constructor
@@ -266,7 +303,8 @@ struct <- function(
 
 #' Field names of a struct or an instance
 #'
-#' @param x A struct, an instance, or anything [as_type()] accepts.
+#' @param x A struct, an instance, an S7 class or object, or anything
+#'   [as_type()] accepts.
 #' @return A character vector, in declaration order.
 #' @export
 #' @examples
@@ -274,8 +312,25 @@ struct <- function(
 #' fields(Pt)
 #' fields(Pt(x = 1, y = 2))
 fields <- function(x) {
-  s <- if (inherits(x, "typed_instance")) attr(x, "spec") else .spec(as_type(x))
-  names(s$fields)
+  if (inherits(x, "typed_instance")) return(.nm(attr(x, "spec")$fields))
+  if (.is_s7_object(x)) x <- attr(x, "S7_class")
+  if (.is_s7_class(x)) return(.nm(.s7_fields(x)))
+  .nm(.spec(as_type(x))$fields)
+}
+
+#' Names of a possibly empty list
+#'
+#' `names(list())` is `NULL`, which would make a fieldless struct report no
+#' field names rather than none, and serialise as a JSON array.
+#'
+#' @param x A list.
+#' @return A character vector, empty rather than `NULL`.
+#' @keywords internal
+#' @examples
+#' rdantic:::.nm(list())
+.nm <- function(x) {
+  n <- names(x)
+  if (is.null(n)) character() else n
 }
 
 #' Read a field, without partial matching
@@ -418,13 +473,29 @@ fields <- function(x) {
 #' try(from_list(Msg, list(topic = "orders")))
 from_list <- function(struct, x) .entry(parse_as(struct, x), parsing = TRUE)
 
+#' The fields a type can be subclassed or weakened through
+#'
+#' @param t A type.
+#' @param what The calling function, for the error message.
+#' @return A named list of types.
+#' @keywords internal
+#' @examples
+#' names(rdantic:::.members_of(struct("FieldsDemo", a = int[1]), "extend()"))
+.members_of <- function(t, what) {
+  s <- .spec(t)
+  f <- if (!is.null(s$fields)) s$fields else s$s7_fields
+  if (is.null(f))
+    stop(what, " needs a struct or an S7 class, not ", s$name, call. = FALSE)
+  f
+}
+
 #' Subclass a struct
 #'
 #' The child gets the parent's fields plus its own, inherits the parent's class
 #' -- so it is accepted wherever the parent is -- and may retype a parent field
 #' by repeating its name.
 #'
-#' @param .parent The struct to extend.
+#' @param .parent The struct to extend, or an S7 class.
 #' @param ... The subclass's name as the single unnamed string, then extra or
 #'   replacement fields.
 #' @return A constructor of class `typed_struct`.
@@ -442,12 +513,12 @@ from_list <- function(struct, x) .entry(parse_as(struct, x), parsing = TRUE)
 #' # a child may retype a parent field
 #' fields(extend(Animal, "Centipede", legs = int[1][. > 50]))
 extend <- function(.parent, ...) {
-  ps <- .spec(.parent)
+  ps <- .spec(as_type(.parent))
+  fields <- .members_of(as_type(.parent), "extend()")
   args <- list(...)
   nms <- names(args)
   if (is.null(nms)) nms <- rep("", length(args))
   name <- args[[which(nms == "")[1]]]
-  fields <- ps$fields
   added <- lapply(args[nms != ""], as_type)
   fields[names(added)] <- added # a child may retype a parent's field
   do.call(
@@ -466,7 +537,7 @@ extend <- function(.parent, ...) {
 #' are dropped as well as requirements, so "not supplied" stays distinguishable
 #' from "set to the default".
 #'
-#' @param .parent The struct to weaken.
+#' @param .parent The struct to weaken, or an S7 class.
 #' @param .name The new struct's name.
 #' @return A constructor of class `typed_struct`.
 #' @export
@@ -479,8 +550,11 @@ extend <- function(.parent, ...) {
 #' patch <- PostPatch(title = "New title")
 #' patch$title
 #' patch$draft          # NULL, not the default
-partial <- function(.parent, .name = paste0("Partial", .spec(.parent)$name)) {
-  fields <- lapply(.spec(.parent)$fields, function(f) {
+partial <- function(
+  .parent,
+  .name = paste0("Partial", .spec(as_type(.parent))$name)
+) {
+  fields <- lapply(.members_of(as_type(.parent), "partial()"), function(f) {
     s <- .spec(f)
     if (!isTRUE(s$has_default)) return(f | NULL)
     s$has_default <- NULL
@@ -500,7 +574,7 @@ partial <- function(.parent, .name = paste0("Partial", .spec(.parent)$name)) {
 #' print(struct("PrintDemo", id = int[1], tag = chr[1] %default% "none"))
 print.typed_struct <- function(x, ...) {
   s <- .spec(x)
-  w <- max(nchar(names(s$fields)))
+  w <- if (length(s$fields)) max(nchar(names(s$fields))) else 0L
   cat("<struct> ", s$name, "\n", sep = "")
   for (n in names(s$fields)) {
     f <- .spec(s$fields[[n]])
@@ -526,7 +600,8 @@ print.typed_struct <- function(x, ...) {
 #' rdantic:::.fmt(1:3)
 #' rdantic:::.fmt(data.frame(a = 1:2))
 .fmt <- function(v) {
-  if (inherits(v, "typed_instance")) paste0("<", class(v)[1], ">") else if (
+  if (inherits(v, "typed_instance") || .is_s7_object(v))
+    paste0("<", class(v)[1], ">") else if (
     is.data.frame(v)
   )
     sprintf("<data.frame %d x %d>", nrow(v), ncol(v)) else if (is.list(v))
@@ -550,7 +625,7 @@ print.typed_struct <- function(x, ...) {
 #' print(Box(label = "tools", items = list("hammer", "nail")))
 print.typed_instance <- function(x, ...) {
   f <- fields(x)
-  w <- max(nchar(f))
+  w <- if (length(f)) max(nchar(f)) else 0L
   cat("<", class(x)[1], ">\n", sep = "")
   for (n in f)
     cat(

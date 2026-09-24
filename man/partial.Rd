@@ -4,10 +4,10 @@
 \alias{partial}
 \title{Make every field of a struct optional}
 \usage{
-partial(.parent, .name = paste0("Partial", .spec(.parent)$name))
+partial(.parent, .name = paste0("Partial", .spec(as_type(.parent))$name))
 }
 \arguments{
-\item{.parent}{The struct to weaken.}
+\item{.parent}{The struct to weaken, or an S7 class.}
 
 \item{.name}{The new struct's name.}
 }

@@ -1,0 +1,294 @@
+---
+title: "S7 compatibility"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{S7 compatibility}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = requireNamespace("S7", quietly = TRUE)
+)
+```
+
+```{r setup}
+library(rdantic)
+library(S7)
+```
+
+[S7](https://rconsortium.github.io/S7/) is the R Consortium's new object system: classes
+with named, typed properties, single and multiple dispatch, and `@` for property access.
+rdantic and S7 answer different halves of the same question -- S7 says what a class *is*,
+rdantic says what a value must *satisfy* and reports, with a path, every place the
+incoming data failed to. They compose in both directions, and neither takes the other
+over: S7 is a suggested dependency, so nothing in this vignette exists unless you have
+S7 installed.
+
+## S7 in one minute
+
+If S7 is new to you, four ideas are enough for this vignette:
+
+* `new_class()` creates a **class**. Calling that class creates an **object**.
+* A class declares named **properties**, each with an S7 class such as
+  `class_double`. Properties are supplied to the constructor by name.
+* `x@lat` reads a property and `x@lat <- value` sets it. S7 checks the property's
+  class when the object is constructed or changed.
+* S7 generics dispatch on the class of one or more arguments, much like S3 methods but
+  with an explicit class definition.
+
+For example, `Pin` below is a class, `Pin(lat = 1, lon = 2)` is an object, and `lat`
+and `lon` are properties. This is only a working introduction; the
+[S7 documentation](https://rconsortium.github.io/S7/) covers classes, properties and
+dispatch in depth.
+
+## Choose a direction
+
+| Starting point | Goal | Use |
+|----------------|------|-----|
+| An existing S7 class | Parse, validate or describe incoming data | Use the class directly, or call `s7_type()` |
+| A new model described with rdantic types | Produce S7 objects | `s7_struct()` |
+| An existing rdantic struct | Hand it to S7-based code | `as_s7_class()` |
+
+The rest of the vignette follows those three paths in that order.
+
+## Using an S7 class as a type
+
+An S7 class can be written anywhere an rdantic type is expected. `as_type()` -- which
+`struct()`, `fn()`, `list_of()` and friends all call -- recognises it and hands it to
+`s7_type()`:
+
+```{r}
+Pin <- new_class("Pin", properties = list(
+  lat = class_double,
+  lon = class_double
+))
+
+as_type(Pin)
+```
+
+That makes it a field type like any other. A plain list is parsed into a real S7 object,
+which is what makes JSON work with no separate JSON mode:
+
+```{r}
+Trip <- struct("Trip",
+  label = chr[1],
+  start = Pin,
+  stop  = Pin
+)
+
+t <- from_json(Trip, '{
+  "label": "commute",
+  "start": {"lat": 52.52, "lon": 13.40},
+  "stop":  {"lat": 48.14, "lon": 11.58}
+}')
+
+t
+class(t$start)
+t$start@lat
+```
+
+Problems inside a property carry the path they occurred at, and every problem is
+reported at once:
+
+```{r, error = TRUE}
+from_list(Trip, list(
+  label = "commute",
+  start = list(lat = "north", lon = 13.40),
+  stop  = list(lat = 48.14)
+))
+```
+
+An S7 object that is already of the right class is passed through untouched; one of a
+different class is rejected rather than silently re-parsed:
+
+```{r, error = TRUE}
+Trip(label = "ok", start = Pin(lat = 1, lon = 2), stop = 42)
+```
+
+Schemas, `to_list()` and `to_json()` all understand S7 objects too:
+
+```{r}
+schema(Pin)
+to_json(t$start)
+```
+
+### What carries over, and what does not
+
+An S7 property declares a class; an rdantic type declares a class *and a shape*. The
+translation keeps what transfers and refuses to invent the rest:
+
+| S7 property class                                             | rdantic type              |
+|---------------------------------------------------------------|---------------------------|
+| `class_integer`, `class_double`, `class_character`, `class_logical` | `int`, `num`, `chr`, `lgl` |
+| `class_list`                                                   | `list_of(anything)`       |
+| `class_Date`, `class_POSIXct`                                  | `date`, `datetime`          |
+| `class_data.frame`                                             | an unconstrained data frame |
+| a `new_union()`                                                | `A \| B`                  |
+| another S7 class                                               | that class, recursively   |
+| anything else, including `class_any`                           | `anything`                |
+
+Note that `class_double` becomes `num`, not `num[1]`: S7 places no length constraint on a
+property, so neither does rdantic, and `to_json()` therefore writes a JSON array. A
+property is **required** unless it declares a `default`, which is the same rule
+`%default%` follows for struct fields.
+
+```{r}
+Vector <- new_class("Vector", properties = list(x = class_double))
+from_list(Vector, list(x = c(1, 2, 3)))@x
+```
+
+Native S7's `new_class()` does not accept rdantic expressions such as `num[1]` as
+property classes. To require exactly one double, define the S7 class through rdantic:
+
+```{r, error = TRUE}
+Scalar <- s7_struct("Scalar", x = num[1])
+Scalar(x = 1)
+Scalar(x = c(1, 2))
+```
+
+`class_data.frame` similarly says only that the value is a data frame; it says nothing
+about column names or types. rdantic preserves that meaning. Use an rdantic
+`frame(id = int, name = chr)` field when you want a particular table shape.
+
+### S7 details and boundaries
+
+The conversion keeps S7's own behavior around the translated fields:
+
+* A property with a getter but no setter is computed. It is omitted from parsing,
+  schemas and serialization because callers cannot supply it. A property with both a
+  getter and setter remains a field.
+* Constant and expression-valued S7 defaults make a property optional. Expressions are
+  left for S7 to evaluate for each new object rather than being evaluated by rdantic.
+* The class's S7 validator still runs when rdantic constructs an object. An abstract S7
+  class can describe and validate existing objects, but a list cannot be parsed into a
+  new instance of it.
+* Unknown input keys are ignored when parsing into an existing S7 class. Classes made
+  by `s7_struct()` can instead use `.extra = "forbid"`.
+
+An existing object of the requested class is returned unchanged. Use `from_list()` or
+`from_json()` on incoming data when parsing and path-aware validation at a boundary is
+the goal.
+
+## Declaring an S7 class with rdantic types
+
+`s7_struct()` is `struct()` with an S7 class as the result. The fields are written
+exactly as they would be for a struct, and every property validates through its rdantic
+type -- on construction *and* on `@<-`:
+
+```{r}
+Account <- s7_struct("Account",
+  id     = int[1][. > 0],
+  email  = chr[1][grepl("@", ., fixed = TRUE)],
+  credit = num[1][. >= 0] %default% 0
+)
+
+a <- Account(id = 1, email = "ada@example.org")
+a@credit
+```
+
+Coercion happens exactly where rdantic would coerce it, so the property holds the value
+rdantic promised rather than the one you happened to type:
+
+```{r}
+a@credit <- 10L
+typeof(a@credit)
+```
+
+and the failures are the same `typed_error`s, with the property named as `@field`:
+
+```{r, error = TRUE}
+a@id <- 0
+```
+
+```{r, error = TRUE}
+Account(id = 1)
+```
+
+The result is an ordinary S7 class, so S7 generics dispatch on it:
+
+```{r}
+balance <- new_generic("balance", "x")
+method(balance, Account) <- function(x) x@credit
+balance(a)
+```
+
+and an ordinary rdantic type, so it parses, validates and describes itself:
+
+```{r}
+from_json(Account, '{"id": 2, "email": "bob@example.org"}')
+schema(Account)$properties$id
+```
+
+Properties are declared `class_any`, deliberately: the real constraint is the rdantic
+type, and a second, weaker check by S7 would only be able to disagree with it. The field
+types are kept on the class, which is why `int[1][. > 0]` survives above rather than
+decaying to `anything`.
+
+One deliberate difference from `struct()`: the name is **not** registered, so `ref()`
+and `opt("Account")` will not find it. A name in that registry means something that
+builds instances, and this builds S7 objects. Pass the class itself instead -- it is a
+value, and a type.
+
+### Inheritance
+
+`.parent` takes an S7 class, whose properties are inherited as typed fields:
+
+```{r}
+Premium <- s7_struct("Premium", tier = one_of("gold", "silver"), .parent = Account)
+
+p <- Premium(id = 1, email = "ada@example.org", tier = "gold")
+class(p)
+fields(Premium)
+```
+
+There is one case rdantic can express and S7 cannot. rdantic lets a child **retype** an
+inherited field; S7 keeps the parent's property definition and silently ignores a
+redeclaration. Rather than hand back a class whose narrower type is never enforced, the
+hierarchy is flattened -- the type is honoured, the `S7_inherits()` relationship is not
+-- and you are told:
+
+```{r}
+Big <- s7_struct("Big", id = int[1][. > 100], .parent = Account)
+class(Big(id = 101, email = "ada@example.org"))
+```
+
+```{r, error = TRUE}
+Big(id = 1, email = "ada@example.org")
+```
+
+## Converting an existing struct
+
+When the struct already exists -- because other code parses into it, or it is reached by
+`ref()` -- `as_s7_class()` converts it rather than redeclaring it:
+
+```{r}
+Animal <- struct("Animal", name = chr[1], legs = int[1])
+Dog    <- extend(Animal, "Dog", good = lgl[1] %default% TRUE)
+
+d <- as_s7_class(Dog)(name = "Rex", legs = 4L)
+class(d)
+S7_inherits(d, as_s7_class(Animal))
+```
+
+`extend()` becomes S7 inheritance, under the same flattening rule as above. Unlike
+`s7_struct()`, `as_s7_class()` caches by name and field signature, so converting the same
+struct twice returns the same class and `S7_inherits()` keeps working.
+
+`extend()` and `partial()` also accept an S7 class directly, and read its properties as
+typed fields -- so you can go back to plain lists at any point:
+
+```{r}
+fields(extend(Account, "AccountNote", note = chr[1]))
+fields(partial(Account))
+```
+
+## In short
+
+Use an S7 class directly when it is already your domain model and rdantic belongs at
+the input boundary. Use `s7_struct()` when you are declaring the model with rdantic
+types but downstream code expects S7. Use `as_s7_class()` when the rdantic struct
+already exists and you need an S7 view of it.

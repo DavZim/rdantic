@@ -119,6 +119,7 @@
 type_of <- function(x) {
   if (is.null(x)) return("NULL")
   if (inherits(x, "typed_instance")) return(paste0("<", class(x)[1], ">"))
+  if (.is_s7_object(x)) return(paste0("<", class(x)[1], ">"))
   if (is.data.frame(x)) return(sprintf("data.frame[%d x %d]", nrow(x), ncol(x)))
   if (inherits(x, "Date")) return(sprintf("date[%d]", length(x)))
   if (inherits(x, "POSIXct")) return(sprintf("datetime[%d]", length(x)))

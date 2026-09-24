@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 
 > **Status: proof of concept.** 
 > No S4, no R6, no code generation — closures, attributes and plain lists.
+> Optional two-way interop with [S7](https://rconsortium.github.io/S7/).
 
 > **Feedback wanted!**
 
@@ -661,6 +662,41 @@ age <- int[1][. > 0] %doc% "Age in years, must be positive."
 schema(age)
 ```
 
+## S7 compatibility
+
+[S7](https://rconsortium.github.io/S7/) says what a class *is*; rdantic says what a value
+must *satisfy*, and where it failed. They compose in both directions. S7 is a suggested
+dependency — none of this loads unless you have it.
+
+In S7, `new_class()` defines a class with named properties, calling the class constructs
+an object, and `@` reads or writes a property. The examples below are enough to use the
+integration; `vignette("s7")` includes a short primer and the precise conversion rules.
+
+An S7 class can be written wherever a type is expected, and a plain list parses into a
+real S7 object, so JSON works with no separate JSON mode:
+
+```{r, error=TRUE, eval=requireNamespace("S7", quietly = TRUE)}
+Pin  <- S7::new_class("Pin", properties = list(lat = S7::class_double, lon = S7::class_double))
+Trip <- struct("Trip", label = chr[1], start = Pin)
+
+from_json(Trip, '{"label": "home", "start": {"lat": 52.52, "lon": 13.40}}')$start
+from_list(Trip, list(label = "home", start = list(lat = "north")))
+```
+
+`s7_struct()` goes the other way: `struct()` with an S7 class as the result. The fields
+become S7 properties that validate — and coerce — through their rdantic types, on
+construction and on `@<-`. `as_s7_class()` does the same for a struct you already have.
+
+```{r, error=TRUE, eval=requireNamespace("S7", quietly = TRUE)}
+Account <- s7_struct("Account", id = int[1][. > 0], credit = num[1][. >= 0] %default% 0)
+
+a <- Account(id = 1)
+a@credit <- 10L   # coerced to double, exactly as rdantic would
+a@id <- 0
+```
+
+See `vignette("s7")` for the full mapping, schemas and inheritance.
+
 ## Cheat sheet
 
 | Want | Write |
@@ -692,6 +728,7 @@ schema(age)
 | fields of a struct or value | `fields(M)`, `fields(x)` |
 | no coercion / no checks | `options(rdantic.strict = TRUE)`, `options(rdantic.check = FALSE)` |
 | JSON | `to_json(x)`, `from_json(T, txt)`, `schema(T)` |
+| S7 interop | an S7 class *is* a type; `s7_struct("Name", f = T, ...)`, `as_s7_class(M)` |
 | catch errors | `tryCatch(..., typed_error = function(e) e$problems)` |
 
 ## How it works

@@ -7,7 +7,7 @@
 extend(.parent, ...)
 }
 \arguments{
-\item{.parent}{The struct to extend.}
+\item{.parent}{The struct to extend, or an S7 class.}
 
 \item{...}{The subclass's name as the single unnamed string, then extra or
 replacement fields.}

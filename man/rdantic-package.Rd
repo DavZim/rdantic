@@ -45,6 +45,15 @@ net <- fn(o = Order, ~ num[1][. >= 0], {
 })
 net(Order(id = 1, qty = 3, unit_price = 19.99))
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/DavZim/rdantic/}
+  \item \url{https://davzim.github.io/rdantic/}
+  \item Report bugs at \url{https://github.com/DavZim/rdantic/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: David Zimmermann-Kollenda \email{david_j_zimmermann@hotmail.com}
 

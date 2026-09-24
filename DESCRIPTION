@@ -1,6 +1,6 @@
 Package: rdantic
 Title: Declared Types, Checked at the Boundary
-Version: 0.2.1
+Version: 0.3.0
 Authors@R:
     person("David", "Zimmermann-Kollenda", , "david_j_zimmermann@hotmail.com", role = c("aut", "cre"))
 Description: A proof-of-concept port of pydantic's central idea to R. Types are
@@ -23,6 +23,7 @@ Suggests:
     jsonlite,
     knitr,
     rmarkdown,
+    S7,
     testthat (>= 3.0.0)
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
@@ -36,6 +37,7 @@ Collate:
     'struct.R'
     'fn.R'
     'serialize.R'
+    's7.R'
     'rdantic-package.R'
 Config/testthat/edition: 3
 VignetteBuilder: knitr

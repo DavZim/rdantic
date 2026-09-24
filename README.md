@@ -7,7 +7,8 @@
 **Declared types, checked at the boundary.** pydantic’s idea, in base R.
 
 > **Status: proof of concept.** No S4, no R6, no code generation —
-> closures, attributes and plain lists.
+> closures, attributes and plain lists. Optional two-way interop with
+> [S7](https://rconsortium.github.io/S7/).
 
 > **Feedback wanted\!**
 
@@ -15,14 +16,6 @@ Concept by humans, implemented by AI.
 
 ``` r
 library(rdantic)   # base R only; jsonlite is needed for the JSON helpers
-#> 
-#> Attaching package: 'rdantic'
-#> The following object is masked from 'package:graphics':
-#> 
-#>     frame
-#> The following object is masked from 'package:base':
-#> 
-#>     date
 ```
 
 ## TL;DR
@@ -502,7 +495,7 @@ date("17/05/2024")
 num(Sys.Date())                           # ... but a Date is never silently a number
 #> Error:
 #> ! 1 validation problem in num
-#>   <value>  expected num, got date[1] "2026-09-16"  -- a <Date> is never silently unclassed
+#>   <value>  expected num, got date[1] "2026-09-24"  -- a <Date> is never silently unclassed
 fct("low", "high")("high")
 #> [1] high
 #> Levels: low high
@@ -1122,38 +1115,87 @@ schema(age)
 #> [1] "Age in years, must be positive."
 ```
 
+## S7 compatibility
+
+[S7](https://rconsortium.github.io/S7/) says what a class *is*; rdantic
+says what a value must *satisfy*, and where it failed. They compose in
+both directions. S7 is a suggested dependency — none of this loads
+unless you have it.
+
+In S7, `new_class()` defines a class with named properties, calling the
+class constructs an object, and `@` reads or writes a property. The
+examples below are enough to use the integration; `vignette("s7")`
+includes a short primer and the precise conversion rules.
+
+An S7 class can be written wherever a type is expected, and a plain list
+parses into a real S7 object, so JSON works with no separate JSON mode:
+
+``` r
+Pin  <- S7::new_class("Pin", properties = list(lat = S7::class_double, lon = S7::class_double))
+Trip <- struct("Trip", label = chr[1], start = Pin)
+
+from_json(Trip, '{"label": "home", "start": {"lat": 52.52, "lon": 13.40}}')$start
+#> <Pin>
+#>  @ lat: num 52.5
+#>  @ lon: num 13.4
+from_list(Trip, list(label = "home", start = list(lat = "north")))
+#> Error:
+#> ! 2 validation problems in Trip
+#>   $start$lat  expected num, got chr[1] "north"  -- strings are never parsed implicitly
+#>   $start$lon  expected num, got <missing>
+```
+
+`s7_struct()` goes the other way: `struct()` with an S7 class as the
+result. The fields become S7 properties that validate — and coerce —
+through their rdantic types, on construction and on `@<-`.
+`as_s7_class()` does the same for a struct you already have.
+
+``` r
+Account <- s7_struct("Account", id = int[1][. > 0], credit = num[1][. >= 0] %default% 0)
+
+a <- Account(id = 1)
+a@credit <- 10L   # coerced to double, exactly as rdantic would
+a@id <- 0
+#> Error:
+#> ! 1 validation problem in <Account>
+#>   @id  expected int[1][. > 0], got num[1] 0
+```
+
+See `vignette("s7")` for the full mapping, schemas and inheritance.
+
 ## Cheat sheet
 
-| Want                                       | Write                                                              |
-| ------------------------------------------ | ------------------------------------------------------------------ |
-| integer / double / string / logical vector | `int`, `num`, `chr`, `lgl`                                         |
-| exactly n elements                         | `T[n]`                                                             |
-| constraint                                 | `T[. > 0]`, `chr[1][nchar(.) < 20]`                                |
-| optional                                   | `T \\| NULL`, `opt(T)`, `opt("StructName")`                        |
-| either                                     | `A \\| B`                                                          |
-| enum                                       | `one_of("a", "b")`                                                 |
-| date / time / factor                       | `date`, `datetime`, `fct("a", "b")`                                |
-| no missing values                          | `no_na(T)`                                                         |
-| custom type                                | `type_from("name", predicate, coerce)`                             |
-| list of                                    | `list_of(T)`                                                       |
-| map (arbitrary keys)                       | `map_of(T)`                                                        |
-| named list with fixed keys                 | `list_of(a = T, b = T)`                                            |
-| data.frame with typed columns              | `frame(col = T, ...)`                                              |
-| a function value                           | `anything[is.function(.)]`, `anything[inherits(., "typed_fn")]`    |
-| default                                    | `T %default% value`                                                |
-| record                                     | `struct("Name", f = T, ...)`                                       |
-| field / struct description                 | `T %doc% "text"`, `struct(..., .description = "text")`             |
-| forward / self reference                   | `ref("Name")`, `opt("Name")`                                       |
-| subclass, partial                          | `extend(M, "Sub", ...)`, `partial(M)`                              |
-| reject unknown keys                        | `struct(..., .extra = "forbid")`, `frame(..., .extra = "forbid")`  |
-| typed function                             | `fn(a = T, ..., ~ Ret, { body })`                                  |
-| typed `...`                                | `fn(a = T, ... = T, ~ Ret, { body })`                              |
-| validate anything                          | `T(x)`, `parse_as(T, x)`, `from_list(M, x)`                        |
-| validate without throwing                  | `try_parse(T, x)`, `is_valid(T, x)`                                |
-| fields of a struct or value                | `fields(M)`, `fields(x)`                                           |
-| no coercion / no checks                    | `options(rdantic.strict = TRUE)`, `options(rdantic.check = FALSE)` |
-| JSON                                       | `to_json(x)`, `from_json(T, txt)`, `schema(T)`                     |
-| catch errors                               | `tryCatch(..., typed_error = function(e) e$problems)`              |
+| Want                                       | Write                                                                      |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| integer / double / string / logical vector | `int`, `num`, `chr`, `lgl`                                                 |
+| exactly n elements                         | `T[n]`                                                                     |
+| constraint                                 | `T[. > 0]`, `chr[1][nchar(.) < 20]`                                        |
+| optional                                   | `T \\| NULL`, `opt(T)`, `opt("StructName")`                                |
+| either                                     | `A \\| B`                                                                  |
+| enum                                       | `one_of("a", "b")`                                                         |
+| date / time / factor                       | `date`, `datetime`, `fct("a", "b")`                                        |
+| no missing values                          | `no_na(T)`                                                                 |
+| custom type                                | `type_from("name", predicate, coerce)`                                     |
+| list of                                    | `list_of(T)`                                                               |
+| map (arbitrary keys)                       | `map_of(T)`                                                                |
+| named list with fixed keys                 | `list_of(a = T, b = T)`                                                    |
+| data.frame with typed columns              | `frame(col = T, ...)`                                                      |
+| a function value                           | `anything[is.function(.)]`, `anything[inherits(., "typed_fn")]`            |
+| default                                    | `T %default% value`                                                        |
+| record                                     | `struct("Name", f = T, ...)`                                               |
+| field / struct description                 | `T %doc% "text"`, `struct(..., .description = "text")`                     |
+| forward / self reference                   | `ref("Name")`, `opt("Name")`                                               |
+| subclass, partial                          | `extend(M, "Sub", ...)`, `partial(M)`                                      |
+| reject unknown keys                        | `struct(..., .extra = "forbid")`, `frame(..., .extra = "forbid")`          |
+| typed function                             | `fn(a = T, ..., ~ Ret, { body })`                                          |
+| typed `...`                                | `fn(a = T, ... = T, ~ Ret, { body })`                                      |
+| validate anything                          | `T(x)`, `parse_as(T, x)`, `from_list(M, x)`                                |
+| validate without throwing                  | `try_parse(T, x)`, `is_valid(T, x)`                                        |
+| fields of a struct or value                | `fields(M)`, `fields(x)`                                                   |
+| no coercion / no checks                    | `options(rdantic.strict = TRUE)`, `options(rdantic.check = FALSE)`         |
+| JSON                                       | `to_json(x)`, `from_json(T, txt)`, `schema(T)`                             |
+| S7 interop                                 | an S7 class *is* a type; `s7_struct("Name", f = T, ...)`, `as_s7_class(M)` |
+| catch errors                               | `tryCatch(..., typed_error = function(e) e$problems)`                      |
 
 ## How it works
 
