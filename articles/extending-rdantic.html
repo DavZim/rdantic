@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,7 @@
     <li><a class="dropdown-item" href="../articles/errors-and-validation.html">Error handling and validation</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-types.html">Dates and temporal types</a></li>
     <li><a class="dropdown-item" href="../articles/extending-rdantic.html">Extending rdantic: new_type()</a></li>
+    <li><a class="dropdown-item" href="../articles/s7.html">S7 compatibility</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -100,7 +101,7 @@ validation and its JSON Schema fragment.</p>
 <p>A type is a closure that validates a value, carrying a
 <code>spec</code> attribute describing it (<code>name</code>,
 <code>validate</code>, <code>schema</code>, and whatever else the
-constructor stored). Calling a type runs <code>validate()</code>;
+constructor stored). Calling a type runs <code><a href="https://rconsortium.github.io/S7/reference/validate.html" class="external-link">validate()</a></code>;
 printing it, or asking <code><a href="../reference/schema.html">schema()</a></code> for its JSON Schema, reads
 the rest of the spec. <code><a href="../reference/new_type.html">new_type()</a></code> is how that closure gets
 built:</p>

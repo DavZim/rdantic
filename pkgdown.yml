@@ -6,11 +6,12 @@ articles:
   errors-and-validation: errors-and-validation.html
   extending-rdantic: extending-rdantic.html
   json-and-schemas: json-and-schemas.html
+  s7: s7.html
   structs: structs.html
   temporal-types: temporal-types.html
   typed-functions: typed-functions.html
   types-in-depth: types-in-depth.html
-last_built: 2026-09-16T08:57Z
+last_built: 2026-09-24T07:48Z
 urls:
   reference: https://davzim.github.io/rdantic/reference
   article: https://davzim.github.io/rdantic/articles

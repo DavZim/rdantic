@@ -6,6 +6,8 @@
   : Union of two types
 - [`as.list(`*`<typed_instance>`*`)`](https://davzim.github.io/rdantic/reference/as.list.typed_instance.md)
   : Convert an instance to a list
+- [`as_s7_class()`](https://davzim.github.io/rdantic/reference/as_s7_class.md)
+  : Turn a struct into an S7 class
 - [`as_type()`](https://davzim.github.io/rdantic/reference/as_type.md) :
   Interpret a value as a type
 - [`date()`](https://davzim.github.io/rdantic/reference/datetimes.md)
@@ -72,6 +74,10 @@
   : Print a struct
 - [`ref()`](https://davzim.github.io/rdantic/reference/ref.md) : Refer
   to a struct by name
+- [`s7_struct()`](https://davzim.github.io/rdantic/reference/s7_struct.md)
+  : Define an S7 class with rdantic field types
+- [`s7_type()`](https://davzim.github.io/rdantic/reference/s7_type.md) :
+  Use an S7 class as a type
 - [`schema()`](https://davzim.github.io/rdantic/reference/schema.md) :
   JSON Schema for a type
 - [`struct()`](https://davzim.github.io/rdantic/reference/struct.md) :

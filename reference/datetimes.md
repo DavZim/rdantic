@@ -46,7 +46,7 @@ try(date(19860))               # a number is not a date
 #>   <value>  expected date, got num[1] 19860  -- wrap it explicitly: as.Date()
 try(num(Sys.Date()))           # ... and a date is not a number
 #> Error : 1 validation problem in num
-#>   <value>  expected num, got date[1] "2026-09-16"  -- a <Date> is never silently unclassed
+#>   <value>  expected num, got date[1] "2026-09-24"  -- a <Date> is never silently unclassed
 
 date[1]                        # exactly one date
 #> <type> date[1]

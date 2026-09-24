@@ -12,7 +12,7 @@ fields(x)
 
 - x:
 
-  A struct, an instance, or anything
+  A struct, an instance, an S7 class or object, or anything
   [`as_type()`](https://davzim.github.io/rdantic/reference/as_type.md)
   accepts.
 

@@ -14,7 +14,7 @@ extend(.parent, ...)
 
 - .parent:
 
-  The struct to extend.
+  The struct to extend, or an S7 class.
 
 - ...:
 

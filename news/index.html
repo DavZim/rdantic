@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,7 @@
     <li><a class="dropdown-item" href="../articles/errors-and-validation.html">Error handling and validation</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-types.html">Dates and temporal types</a></li>
     <li><a class="dropdown-item" href="../articles/extending-rdantic.html">Extending rdantic: new_type()</a></li>
+    <li><a class="dropdown-item" href="../articles/s7.html">S7 compatibility</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -47,6 +48,31 @@
       <small>Source: <a href="https://github.com/DavZim/rdantic/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="rdantic-030">rdantic 0.3.0<a class="anchor" aria-label="anchor" href="#rdantic-030"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-3-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-3-0"></a></h3>
+<ul><li>S7 interoperability, in both directions. S7 is a suggested dependency: nothing changes when it is not installed. See <code><a href="../articles/s7.html">vignette("s7")</a></code>.</li>
+<li>An S7 class can be used wherever a type is expected – as a struct field, an <code><a href="../reference/fn.html">fn()</a></code> argument, a <code><a href="../reference/list_of.html">list_of()</a></code> element type. <code><a href="../reference/as_type.html">as_type()</a></code> recognises it and <code><a href="../reference/s7_type.html">s7_type()</a></code> builds the type: an instance validates as itself, and a plain list is parsed into a real S7 object, so <code><a href="../reference/from_json.html">from_json()</a></code> and <code><a href="../reference/from_list.html">from_list()</a></code> construct S7 objects property by property with every problem reported under its path. <code><a href="../reference/schema.html">schema()</a></code>, <code><a href="../reference/to_list.html">to_list()</a></code> and <code><a href="../reference/to_json.html">to_json()</a></code> understand S7 objects too.</li>
+<li>
+<code><a href="../reference/as_s7_class.html">as_s7_class()</a></code> turns a struct into an S7 class whose properties validate through their rdantic types on construction and on <code>@&lt;-</code>, coercing where rdantic coerces and raising the same <code>typed_error</code>. A struct made with <code><a href="../reference/extend.html">extend()</a></code> becomes an S7 subclass; one that retypes a parent’s field is flattened with a warning, because S7 cannot override an inherited property.</li>
+<li>
+<code><a href="../reference/s7_struct.html">s7_struct()</a></code> declares an S7 class directly, with rdantic field types and <code><a href="../reference/struct.html">struct()</a></code>’s <code>.description</code> and <code>.extra</code>, plus a <code>.parent</code> S7 class to inherit from. Unlike <code><a href="../reference/struct.html">struct()</a></code> it does not register the name, since a name in that registry means something that builds instances rather than S7 objects.</li>
+<li>
+<code><a href="../reference/fields.html">fields()</a></code> and <code><a href="../reference/type_of.html">type_of()</a></code> now accept S7 classes and objects.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-3-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-3-0"></a></h3>
+<ul><li>A struct with no fields no longer misbehaves: <code><a href="../reference/fields.html">fields()</a></code> returns <code><a href="https://rdrr.io/r/base/character.html" class="external-link">character()</a></code> rather than <code>NULL</code>, <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> no longer warns (<code>no non-missing arguments to max</code>), and both the instance and its schema’s <code>properties</code> serialise as <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{}</a></code> rather than <code>[]</code>.</li>
+<li>A computed S7 property – one with a <code>getter</code> and no <code>setter</code> – is no longer treated as a field. It was reported as a missing required value, which made every class with one impossible to parse or serialise.</li>
+<li>
+<code><a href="../reference/as_type.html">as_type()</a></code> now accepts an S7 union, so <code>SomeClass | NULL</code> and <code>class_double | class_character</code> are types. A <code>NULL</code> member means the null type rather than <code>anything</code>.</li>
+<li>
+<code><a href="../reference/to_list.html">to_list()</a></code> and <code><a href="../reference/to_json.html">to_json()</a></code> now agree on which S7 properties they emit.</li>
+<li>
+<code><a href="../reference/extend.html">extend()</a></code> and <code><a href="../reference/partial.html">partial()</a></code> now resolve their parent through <code><a href="../reference/as_type.html">as_type()</a></code> and refuse a type that has no fields. A type that is not a struct – <code>int[1]</code>, <code>list_of(int)</code>, an S7 class – previously produced a struct silently missing the parent’s fields instead of an error. Both now also accept an S7 class, and carry its properties into the new struct.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="rdantic-021">rdantic 0.2.1<a class="anchor" aria-label="anchor" href="#rdantic-021"></a></h2>
 <div class="section level3">

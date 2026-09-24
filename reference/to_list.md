@@ -23,6 +23,7 @@ The same shape with every instance replaced by a named list.
 ``` r
 Pin <- struct("Pin", lat = num[1], lon = num[1])
 Trip <- struct("Trip", from = Pin, to = Pin)
+#> Warning: struct `Trip` redefined; values and refs made earlier keep the previous definition
 str(to_list(Trip(from = Pin(lat = 1, lon = 2), to = Pin(lat = 3, lon = 4))))
 #> List of 2
 #>  $ from:List of 2

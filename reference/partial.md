@@ -7,14 +7,14 @@ distinguishable from "set to the default".
 ## Usage
 
 ``` r
-partial(.parent, .name = paste0("Partial", .spec(.parent)$name))
+partial(.parent, .name = paste0("Partial", .spec(as_type(.parent))$name))
 ```
 
 ## Arguments
 
 - .parent:
 
-  The struct to weaken.
+  The struct to weaken, or an S7 class.
 
 - .name:
 

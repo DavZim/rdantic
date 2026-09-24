@@ -69,6 +69,7 @@ Account <- struct("Account",
   credit  = num[1][. >= 0] %default% 0,
   closed  = date[1] | NULL
 )
+#> Warning: struct `Account` redefined; values and refs made earlier keep the previous definition
 Account
 #> <struct> Account
 #>   id     : int[1][. > 0]

@@ -1,8 +1,9 @@
 # Interpret a value as a type
 
 Types are values, so most of the API accepts either a type, `NULL`
-(meaning the null type) or a string (meaning a struct looked up by
-name).
+(meaning the null type), a string (meaning a struct looked up by name)
+or an S7 class (see
+[`s7_type()`](https://davzim.github.io/rdantic/reference/s7_type.md)).
 
 ## Usage
 
@@ -14,7 +15,7 @@ as_type(x)
 
 - x:
 
-  A type, `NULL`, or a struct name.
+  A type, `NULL`, a struct name, or an S7 class.
 
 ## Value
 

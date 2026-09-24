@@ -7,6 +7,7 @@
 <url><loc>https://davzim.github.io/rdantic/articles/extending-rdantic.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/index.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/json-and-schemas.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/articles/s7.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/structs.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/temporal-types.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/typed-functions.html</loc></url>
@@ -16,6 +17,7 @@
 <url><loc>https://davzim.github.io/rdantic/news/index.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/Ops.type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/as.list.typed_instance.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/as_s7_class.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/as_type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/datetimes.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/desc.html</loc></url>
@@ -36,8 +38,11 @@
 <url><loc>https://davzim.github.io/rdantic/reference/dot-fn_name.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-get_field.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-got.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-has_s7.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-hints_of.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-is_bad.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-is_s7_class.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-is_s7_object.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-json_ready.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-list_elt_type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-list_of_any.html</loc></url>
@@ -45,8 +50,11 @@
 <url><loc>https://davzim.github.io/rdantic/reference/dot-make_struct.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-map_of_any.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-members.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-members_of.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-need_jsonlite.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-need_s7.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-new_instance.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-nm.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-plain.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-rebuild.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-refine_hint.html</loc></url>
@@ -55,12 +63,17 @@
 <url><loc>https://davzim.github.io/rdantic/reference/dot-relabel.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-required_fields.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-rows_to_df.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-s7_fields.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-s7_name.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-s7_prop_type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-same_value.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-set_field.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-sig.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-sized.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-spec.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-strict.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-struct_ctor.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-struct_fields.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-temporal.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-union.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/extend.html</loc></url>
@@ -90,6 +103,8 @@
 <url><loc>https://davzim.github.io/rdantic/reference/print.typed_struct.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/rdantic-package.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/ref.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/s7_struct.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/s7_type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/schema.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/struct.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/sub-.type.html</loc></url>

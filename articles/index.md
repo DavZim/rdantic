@@ -21,3 +21,4 @@
   types](https://davzim.github.io/rdantic/articles/temporal-types.md):
 - [Extending rdantic:
   new_type()](https://davzim.github.io/rdantic/articles/extending-rdantic.md):
+- [S7 compatibility](https://davzim.github.io/rdantic/articles/s7.md):

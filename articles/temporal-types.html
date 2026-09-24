@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,7 @@
     <li><a class="dropdown-item" href="../articles/errors-and-validation.html">Error handling and validation</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-types.html">Dates and temporal types</a></li>
     <li><a class="dropdown-item" href="../articles/extending-rdantic.html">Extending rdantic: new_type()</a></li>
+    <li><a class="dropdown-item" href="../articles/s7.html">S7 compatibility</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -118,7 +119,7 @@ text that does not parse is an error, not a missing value.</p>
 <span><span class="fu"><a href="../reference/primitives.html">num</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>                           <span class="co"># ... and a date is never silently a number</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 validation problem in num</span></span>
-<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-16"  -- a &lt;Date&gt; is never silently unclassed</span></span></code></pre></div>
+<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-24"  -- a &lt;Date&gt; is never silently unclassed</span></span></code></pre></div>
 <p>Like any other type, a date can carry a length or be used inside a
 union or a container:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">

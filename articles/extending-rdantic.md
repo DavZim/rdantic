@@ -30,8 +30,9 @@ its JSON Schema fragment.
 
 A type is a closure that validates a value, carrying a `spec` attribute
 describing it (`name`, `validate`, `schema`, and whatever else the
-constructor stored). Calling a type runs `validate()`; printing it, or
-asking
+constructor stored). Calling a type runs
+[`validate()`](https://rconsortium.github.io/S7/reference/validate.html);
+printing it, or asking
 [`schema()`](https://davzim.github.io/rdantic/reference/schema.md) for
 its JSON Schema, reads the rest of the spec.
 [`new_type()`](https://davzim.github.io/rdantic/reference/new_type.md)

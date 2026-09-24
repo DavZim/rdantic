@@ -48,6 +48,16 @@ Types are ordinary values built from operators R already has:
 right R type. `rdantic.check` set to `FALSE` skips the checks in
 [`fn()`](https://davzim.github.io/rdantic/reference/fn.md).
 
+## See also
+
+Useful links:
+
+- <https://github.com/DavZim/rdantic/>
+
+- <https://davzim.github.io/rdantic/>
+
+- Report bugs at <https://github.com/DavZim/rdantic/issues>
+
 ## Author
 
 **Maintainer**: David Zimmermann-Kollenda

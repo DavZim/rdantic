@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,6 +47,7 @@
     <li><a class="dropdown-item" href="articles/errors-and-validation.html">Error handling and validation</a></li>
     <li><a class="dropdown-item" href="articles/temporal-types.html">Dates and temporal types</a></li>
     <li><a class="dropdown-item" href="articles/extending-rdantic.html">Extending rdantic: new_type()</a></li>
+    <li><a class="dropdown-item" href="articles/s7.html">S7 compatibility</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -66,22 +67,14 @@
   <main id="main" class="col-md-9">
 <p><strong>Declared types, checked at the boundary.</strong> pydantic’s idea, in base R.</p>
 <blockquote>
-<p><strong>Status: proof of concept.</strong> No S4, no R6, no code generation — closures, attributes and plain lists.</p>
+<p><strong>Status: proof of concept.</strong> No S4, no R6, no code generation — closures, attributes and plain lists. Optional two-way interop with <a href="https://rconsortium.github.io/S7/" class="external-link">S7</a>.</p>
 </blockquote>
 <blockquote>
 <p><strong>Feedback wanted!</strong></p>
 </blockquote>
 <p>Concept by humans, implemented by AI.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/DavZim/rdantic/" class="external-link">rdantic</a></span><span class="op">)</span>   <span class="co"># base R only; jsonlite is needed for the JSON helpers</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'rdantic'</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:graphics':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     frame</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:base':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     date</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/DavZim/rdantic/" class="external-link">rdantic</a></span><span class="op">)</span>   <span class="co"># base R only; jsonlite is needed for the JSON helpers</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="tldr">TL;DR<a class="anchor" aria-label="anchor" href="#tldr"></a>
 </h2>
@@ -509,7 +502,7 @@
 <span><span class="fu"><a href="reference/primitives.html">num</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>                           <span class="co"># ... but a Date is never silently a number</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! 1 validation problem in num</span></span>
-<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-16"  -- a &lt;Date&gt; is never silently unclassed</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-24"  -- a &lt;Date&gt; is never silently unclassed</span></span>
 <span><span class="fu"><a href="reference/fct.html">fct</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"high"</span><span class="op">)</span><span class="op">(</span><span class="st">"high"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] high</span></span>
 <span><span class="co">#&gt; Levels: low high</span></span>
@@ -993,12 +986,43 @@
 <span><span class="co">#&gt; [1] "Age in years, must be positive."</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="s7-compatibility">S7 compatibility<a class="anchor" aria-label="anchor" href="#s7-compatibility"></a>
+</h2>
+<p><a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> says what a class <em>is</em>; rdantic says what a value must <em>satisfy</em>, and where it failed. They compose in both directions. S7 is a suggested dependency — none of this loads unless you have it.</p>
+<p>In S7, <code>new_class()</code> defines a class with named properties, calling the class constructs an object, and <code>@</code> reads or writes a property. The examples below are enough to use the integration; <code><a href="articles/s7.html">vignette("s7")</a></code> includes a short primer and the precise conversion rules.</p>
+<p>An S7 class can be written wherever a type is expected, and a plain list parses into a real S7 object, so JSON works with no separate JSON mode:</p>
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">Pin</span>  <span class="op">&lt;-</span> <span class="fu">S7</span><span class="fu">::</span><span class="fu"><a href="https://rconsortium.github.io/S7/reference/new_class.html" class="external-link">new_class</a></span><span class="op">(</span><span class="st">"Pin"</span>, properties <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lat <span class="op">=</span> <span class="fu">S7</span><span class="fu">::</span><span class="va"><a href="https://rconsortium.github.io/S7/reference/base_classes.html" class="external-link">class_double</a></span>, lon <span class="op">=</span> <span class="fu">S7</span><span class="fu">::</span><span class="va"><a href="https://rconsortium.github.io/S7/reference/base_classes.html" class="external-link">class_double</a></span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">Trip</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Trip"</span>, label <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, start <span class="op">=</span> <span class="va">Pin</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/from_json.html">from_json</a></span><span class="op">(</span><span class="va">Trip</span>, <span class="st">'{"label": "home", "start": {"lat": 52.52, "lon": 13.40}}'</span><span class="op">)</span><span class="op">$</span><span class="va">start</span></span>
+<span><span class="co">#&gt; &lt;Pin&gt;</span></span>
+<span><span class="co">#&gt;  @ lat: num 52.5</span></span>
+<span><span class="co">#&gt;  @ lon: num 13.4</span></span>
+<span><span class="fu"><a href="reference/from_list.html">from_list</a></span><span class="op">(</span><span class="va">Trip</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>label <span class="op">=</span> <span class="st">"home"</span>, start <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lat <span class="op">=</span> <span class="st">"north"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! 2 validation problems in Trip</span></span>
+<span><span class="co">#&gt;   $start$lat  expected num, got chr[1] "north"  -- strings are never parsed implicitly</span></span>
+<span><span class="co">#&gt;   $start$lon  expected num, got &lt;missing&gt;</span></span></code></pre></div>
+<p><code><a href="reference/s7_struct.html">s7_struct()</a></code> goes the other way: <code><a href="reference/struct.html">struct()</a></code> with an S7 class as the result. The fields become S7 properties that validate — and coerce — through their rdantic types, on construction and on <code>@&lt;-</code>. <code><a href="reference/as_s7_class.html">as_s7_class()</a></code> does the same for a struct you already have.</p>
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">Account</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/s7_struct.html">s7_struct</a></span><span class="op">(</span><span class="st">"Account"</span>, id <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span>, credit <span class="op">=</span> <span class="va">num</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">]</span> <span class="op"><a href="reference/grapes-default-grapes.html">%default%</a></span> <span class="fl">0</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu">Account</span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">a</span><span class="op">@</span><span class="va">credit</span> <span class="op">&lt;-</span> <span class="fl">10L</span>   <span class="co"># coerced to double, exactly as rdantic would</span></span>
+<span><span class="va">a</span><span class="op">@</span><span class="va">id</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="co">#&gt; Error:</span></span>
+<span><span class="co">#&gt; ! 1 validation problem in &lt;Account&gt;</span></span>
+<span><span class="co">#&gt;   @id  expected int[1][. &gt; 0], got num[1] 0</span></span></code></pre></div>
+<p>See <code><a href="articles/s7.html">vignette("s7")</a></code> for the full mapping, schemas and inheritance.</p>
+</div>
+<div class="section level2">
 <h2 id="cheat-sheet">Cheat sheet<a class="anchor" aria-label="anchor" href="#cheat-sheet"></a>
 </h2>
 <table class="table">
 <colgroup>
-<col width="38%">
-<col width="61%">
+<col width="36%">
+<col width="63%">
 </colgroup>
 <thead><tr>
 <th>Want</th>
@@ -1140,6 +1164,11 @@
 <td>JSON</td>
 <td>
 <code>to_json(x)</code>, <code>from_json(T, txt)</code>, <code>schema(T)</code>
+</td>
+</tr>
+<tr>
+<td>S7 interop</td>
+<td>an S7 class <em>is</em> a type; <code>s7_struct("Name", f = T, ...)</code>, <code>as_s7_class(M)</code>
 </td>
 </tr>
 <tr>
