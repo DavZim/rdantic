@@ -113,9 +113,11 @@ options(rdantic.check = TRUE)
 
 ## Composing typed functions
 
-A type is just a value plus a predicate, so a *function* type needs no
-new machinery – `anything[inherits(., "typed_fn")]` (or any narrower
-predicate) is a type whose values are themselves typed functions:
+`typed_fn` accepts any function created by
+[`fn()`](https://davzim.github.io/rdantic/reference/fn.md). More often,
+higher-order code needs a particular signature:
+`fn_type(o = Order, ~ Money)` accepts only a typed function with that
+declared argument and return type.
 
 ``` r
 
@@ -127,8 +129,8 @@ Order <- struct("Order",
 )
 order <- Order(id = 1042, qty = 3, unit_price = 19.99)
 
-pricing_rule <- anything[inherits(., "typed_fn")]
 Money        <- num[1][. >= 0]
+pricing_rule <- fn_type(o = Order, ~ Money)
 ```
 
 `rule_for()` **returns** a typed function; `invoice()` **takes** one.
@@ -151,6 +153,11 @@ invoice <- fn(o = Order, rule = pricing_rule, ~ Money, {
 invoice(order, rule_for("bulk"))
 #> [1] 53.97
 ```
+
+Signature checks include argument names and defaults. They compare
+declarations rather than calling the function, so no user code runs
+during validation. Use the broader `typed_fn` type when any declared
+signature is acceptable.
 
 The `clearance` rule is well-typed on the way in and wrong on the way
 out (a negative total). Nothing catches it until the arithmetic has
@@ -178,7 +185,7 @@ rule_for("half off")                     # (1) argument, at the door
 invoice(order, function(o) 0)            # (2) argument: a function, but not a typed one
 #> Error:
 #> ! 1 validation problem in invoice()
-#>   rule  expected anything[inherits(., "typed_fn")], got function[1]
+#>   rule  expected <fn> (o: Order) -> num[1][. >= 0], got function[1]
 ```
 
 And a factory that forgets to return a function is caught by its own
@@ -190,5 +197,5 @@ broken_for <- fn(kind = chr[1], ~ pricing_rule, { toupper(kind) })
 broken_for("bulk")
 #> Error:
 #> ! 1 validation problem in broken_for()
-#>   <return>  expected anything[inherits(., "typed_fn")], got chr[1] "BULK"
+#>   <return>  expected <fn> (o: Order) -> num[1][. >= 0], got chr[1] "BULK"
 ```

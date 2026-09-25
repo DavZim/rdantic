@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -176,10 +176,10 @@ matters more than the safety:</p>
 <div class="section level2">
 <h2 id="composing-typed-functions">Composing typed functions<a class="anchor" aria-label="anchor" href="#composing-typed-functions"></a>
 </h2>
-<p>A type is just a value plus a predicate, so a <em>function</em> type
-needs no new machinery – <code>anything[inherits(., "typed_fn")]</code>
-(or any narrower predicate) is a type whose values are themselves typed
-functions:</p>
+<p><code>typed_fn</code> accepts any function created by
+<code><a href="../reference/fn.html">fn()</a></code>. More often, higher-order code needs a particular
+signature: <code>fn_type(o = Order, ~ Money)</code> accepts only a typed
+function with that declared argument and return type.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Order</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Order"</span>,</span>
 <span>  id         <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span>,</span>
@@ -189,8 +189,8 @@ functions:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">order</span> <span class="op">&lt;-</span> <span class="fu">Order</span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1042</span>, qty <span class="op">=</span> <span class="fl">3</span>, unit_price <span class="op">=</span> <span class="fl">19.99</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pricing_rule</span> <span class="op">&lt;-</span> <span class="va">anything</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">.</span>, <span class="st">"typed_fn"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">Money</span>        <span class="op">&lt;-</span> <span class="va">num</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">]</span></span></code></pre></div>
+<span><span class="va">Money</span>        <span class="op">&lt;-</span> <span class="va">num</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">]</span></span>
+<span><span class="va">pricing_rule</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fn_type.html">fn_type</a></span><span class="op">(</span>o <span class="op">=</span> <span class="va">Order</span>, <span class="op">~</span> <span class="va">Money</span><span class="op">)</span></span></code></pre></div>
 <p><code>rule_for()</code> <strong>returns</strong> a typed function;
 <code>invoice()</code> <strong>takes</strong> one. Three typed
 functions, stacked:</p>
@@ -209,6 +209,10 @@ functions, stacked:</p>
 <span></span>
 <span><span class="fu">invoice</span><span class="op">(</span><span class="va">order</span>, <span class="fu">rule_for</span><span class="op">(</span><span class="st">"bulk"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 53.97</span></span></code></pre></div>
+<p>Signature checks include argument names and defaults. They compare
+declarations rather than calling the function, so no user code runs
+during validation. Use the broader <code>typed_fn</code> type when any
+declared signature is acceptable.</p>
 <p>The <code>clearance</code> rule is well-typed on the way in and wrong
 on the way out (a negative total). Nothing catches it until the
 arithmetic has already run:</p>
@@ -230,7 +234,7 @@ as it possibly can be:</p>
 <span><span class="fu">invoice</span><span class="op">(</span><span class="va">order</span>, <span class="kw">function</span><span class="op">(</span><span class="va">o</span><span class="op">)</span> <span class="fl">0</span><span class="op">)</span>            <span class="co"># (2) argument: a function, but not a typed one</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 validation problem in invoice()</span></span>
-<span><span class="co">#&gt;   rule  expected anything[inherits(., "typed_fn")], got function[1]</span></span></code></pre></div>
+<span><span class="co">#&gt;   rule  expected &lt;fn&gt; (o: Order) -&gt; num[1][. &gt;= 0], got function[1]</span></span></code></pre></div>
 <p>And a factory that forgets to return a function is caught by its own
 return type, before anyone can call the result:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
@@ -238,7 +242,7 @@ return type, before anyone can call the result:</p>
 <span><span class="fu">broken_for</span><span class="op">(</span><span class="st">"bulk"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 validation problem in broken_for()</span></span>
-<span><span class="co">#&gt;   &lt;return&gt;  expected anything[inherits(., "typed_fn")], got chr[1] "BULK"</span></span></code></pre></div>
+<span><span class="co">#&gt;   &lt;return&gt;  expected &lt;fn&gt; (o: Order) -&gt; num[1][. &gt;= 0], got chr[1] "BULK"</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

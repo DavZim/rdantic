@@ -26,6 +26,8 @@
   Field names of a struct or an instance
 - [`fn()`](https://davzim.github.io/rdantic/reference/fn.md) : Define a
   typed function
+- [`fn_type()`](https://davzim.github.io/rdantic/reference/fn_type.md) :
+  Type for a typed function with a particular signature
 - [`frame()`](https://davzim.github.io/rdantic/reference/frame.md) :
   Data frame type
 - [`from_json()`](https://davzim.github.io/rdantic/reference/from_json.md)
@@ -96,3 +98,5 @@
   : Build a type from a predicate
 - [`type_of()`](https://davzim.github.io/rdantic/reference/type_of.md) :
   Describe the type of a value the way rdantic names types
+- [`typed_fn()`](https://davzim.github.io/rdantic/reference/typed_fn.md)
+  : Type for any typed function

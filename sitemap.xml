@@ -82,6 +82,7 @@
 <url><loc>https://davzim.github.io/rdantic/reference/fct.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/fields.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/fn.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/fn_type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/frame.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/from_json.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/from_list.html</loc></url>
@@ -115,5 +116,6 @@
 <url><loc>https://davzim.github.io/rdantic/reference/try_parse.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/type_from.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/type_of.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/typed_fn.html</loc></url>
 </urlset>
 

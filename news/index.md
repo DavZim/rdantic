@@ -1,5 +1,17 @@
 # Changelog
 
+## rdantic 0.3.2
+
+### New features
+
+- `typed_fn` is a type for any function declared with
+  [`fn()`](https://davzim.github.io/rdantic/reference/fn.md), and
+  [`fn_type()`](https://davzim.github.io/rdantic/reference/fn_type.md)
+  builds a type for an exact declared argument and return signature.
+  This makes typed function factories and higher-order arguments
+  checkable without an ad hoc
+  [`inherits()`](https://rdrr.io/r/base/class.html) predicate.
+
 ## rdantic 0.3.1
 
 ### New features

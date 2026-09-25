@@ -10,13 +10,13 @@ Source:
 [`DESCRIPTION`](https://github.com/DavZim/rdantic/blob/master/DESCRIPTION)
 
 Zimmermann-Kollenda D (2026). *rdantic: Declared Types, Checked at the
-Boundary*. R package version 0.3.1,
+Boundary*. R package version 0.3.2,
 <https://github.com/DavZim/rdantic/>.
 
     @Manual{,
       title = {rdantic: Declared Types, Checked at the Boundary},
       author = {David Zimmermann-Kollenda},
       year = {2026},
-      note = {R package version 0.3.1},
+      note = {R package version 0.3.2},
       url = {https://github.com/DavZim/rdantic/},
     }
