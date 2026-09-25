@@ -188,3 +188,30 @@ test_that("field descriptions and .description reproduce the target schema shape
   expect_identical(s$required, as.list(c("name", "age", "is_active")))
   expect_false(s$additionalProperties)
 })
+
+test_that("describe() documents an existing struct and registers the result", {
+  User <- struct("TDescribe", id = int[1], name = chr[1])
+  UserRef <- ref("TDescribe")
+  User <- User |>
+    describe(
+      . = "\n        A user.\n          With details.\n      ",
+      id = "\n        Stable identifier.\n      "
+    )
+
+  expect_identical(schema(User)$description, "A user.\n  With details.")
+  expect_identical(schema(User)$properties$id$description, "Stable identifier.")
+  expect_null(schema(User)$properties$name$description)
+  expect_s3_class(parse_as(UserRef, list(id = 1, name = "Ada")), "TDescribe")
+  expect_identical(rdantic:::.spec(get("TDescribe", rdantic:::.registry))$description, "A user.\n  With details.")
+
+  User <- describe(User, name = "Full name.")
+  expect_identical(schema(User)$description, "A user.\n  With details.")
+})
+
+test_that("describe() validates field documentation", {
+  User <- struct("TDescribeErrors", id = int[1])
+  expect_error(describe(User, "unnamed"), "must be named")
+  expect_error(describe(User, id = "a", id = "b"), "unique")
+  expect_error(describe(User, missing = "no"), "unknown field")
+  expect_error(describe(int, value = "no"), "needs a struct")
+})

@@ -30,6 +30,11 @@ duplicates, one \code{\link[=.refined]{.refined()}} wrote automatically.
 A struct's own top-level description is set with \code{struct(.description = )}
 instead: \code{desc()} on a whole struct builds a new, unregistered constructor,
 so a \code{\link[=ref]{ref()}} to that struct's name would still see the undescribed one.
+
+Multiline descriptions are dedented: blank first and last lines and the
+indentation shared by every nonblank line are removed. This makes raw
+strings (\code{r"(...)"}) convenient for long prose. Use \code{describe()} to keep
+all of a struct's longer descriptions together after its declaration.
 }
 \examples{
 age <- int[1][. > 0] \%doc\% "Age in years."

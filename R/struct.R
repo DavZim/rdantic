@@ -175,12 +175,14 @@ struct <- function(
 #' @examples
 #' rdantic:::.struct_ctor("Loose", list(a = int[1]), character(), NULL, "ignore")
 .struct_ctor <- function(name, fields, parents, description, extra) {
-  if (
-    !is.null(description) &&
-      (!is.character(description) || length(description) != 1)
+  if (!is.null(description)) description <- .description(description)
+  spec <- list(
+    name = name,
+    fields = fields,
+    parents = parents,
+    description = description,
+    extra = extra
   )
-    stop("a struct's .description must be a single string, or NULL")
-  spec <- list(name = name, fields = fields, parents = parents, extra = extra)
   spec$validate <- function(x, path) {
     if (inherits(x, name)) return(x)
     # instances are lists, so a *different* struct must not be parsed as one
@@ -209,6 +211,54 @@ struct <- function(
   # environment a small fixed cost rather than recursing into its contents
   spec_env <- list2env(spec, parent = emptyenv())
   .make_struct(spec, spec_env)
+}
+
+#' Describe a struct and its fields
+#'
+#' Adds JSON Schema descriptions after a struct has been declared. This is
+#' useful when descriptions are long enough that keeping them beside each type
+#' would obscure the structure. The returned struct replaces the registered
+#' definition of the same name, so assign the result back to the original name.
+#'
+#' Multiline descriptions are dedented: blank first and last lines and the
+#' indentation shared by every nonblank line are removed. This makes R raw
+#' strings convenient for long prose.
+#'
+#' @param x A struct.
+#' @param ... Field descriptions, named for fields in `x`.
+#' @param . The struct description. When omitted, the existing description is
+#'   preserved.
+#' @return A new struct definition carrying the descriptions.
+#' @export
+#' @examples
+#' User <- struct("DescribedUser", id = int[1], name = chr[1]) |>
+#'   describe(
+#'     . = r"(
+#'       A user returned by the accounts API.
+#'     )",
+#'     id = "Stable user identifier.",
+#'     name = "Full display name."
+#'   )
+#' schema(User)
+describe <- function(x, ..., . = NULL) {
+  if (!inherits(x, "typed_struct")) stop("describe() needs a struct")
+  spec <- .spec(x)
+  descriptions <- list(...)
+  nms <- names(descriptions)
+  if (is.null(nms)) nms <- rep("", length(descriptions))
+  if (length(descriptions) && any(!nzchar(nms)))
+    stop("all field descriptions must be named")
+  if (anyDuplicated(nms)) stop("field descriptions must have unique names")
+  unknown <- setdiff(nms, names(spec$fields))
+  if (length(unknown))
+    stop("unknown field description: ", paste(unknown, collapse = ", "))
+
+  fields <- spec$fields
+  for (name in nms) fields[[name]] <- desc(fields[[name]], descriptions[[name]])
+  description <- if (is.null(.)) spec$description else .description(.)
+  result <- .struct_ctor(spec$name, fields, spec$parents, description, spec$extra)
+  if (inherits(x, "typed_struct")) assign(spec$name, result, envir = .registry)
+  result
 }
 
 #' Compile a struct spec into a constructor

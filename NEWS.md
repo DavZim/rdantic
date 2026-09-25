@@ -1,3 +1,15 @@
+# rdantic 0.3.1
+
+## New features
+
+* `describe()` adds a struct description and named field descriptions after
+  declaration, keeping long documentation blocks together without obscuring
+  the schema's type structure. The returned definition is registered so later
+  `ref()` resolution uses the documented schema.
+* `desc()`, `%doc%`, `struct(.description = )`, and `describe()` now normalize
+  multiline descriptions by removing blank edge lines and common indentation,
+  making R raw strings convenient for long schema documentation.
+
 # rdantic 0.3.0
 
 ## New features

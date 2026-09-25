@@ -398,6 +398,11 @@ one_of <- function(...) {
 #' instead: `desc()` on a whole struct builds a new, unregistered constructor,
 #' so a [ref()] to that struct's name would still see the undescribed one.
 #'
+#' Multiline descriptions are dedented: blank first and last lines and the
+#' indentation shared by every nonblank line are removed. This makes raw
+#' strings (`r"(...)"`) convenient for long prose. Use `describe()` to keep
+#' all of a struct's longer descriptions together after its declaration.
+#'
 #' @param t A type, or anything [as_type()] accepts.
 #' @param description A single string.
 #' @return A type carrying the description.
@@ -413,8 +418,7 @@ one_of <- function(...) {
 #' schema(Person)$properties$occupation
 desc <- function(t, description) {
   t <- as_type(t)
-  if (!is.character(description) || length(description) != 1 || is.na(description))
-    stop("desc() needs a single string description")
+  description <- .description(description)
   s <- .spec(t)
   inner_schema <- s$schema
   s$schema <- function() utils::modifyList(inner_schema(), list(description = description))
@@ -424,3 +428,22 @@ desc <- function(t, description) {
 #' @rdname desc
 #' @export
 `%doc%` <- function(t, description) desc(t, description)
+
+#' Normalize a schema description
+#'
+#' @param description A single string.
+#' @return The description with blank edge lines and common indentation removed.
+#' @keywords internal
+.description <- function(description) {
+  if (!is.character(description) || length(description) != 1 || is.na(description))
+    stop("a description must be a single string")
+  lines <- strsplit(description, "\\r?\\n", perl = TRUE)[[1]]
+  while (length(lines) && !nzchar(trimws(lines[[1]]))) lines <- lines[-1]
+  while (length(lines) && !nzchar(trimws(lines[[length(lines)]]))) lines <- lines[-length(lines)]
+  if (!length(lines)) return("")
+  nonblank <- nzchar(trimws(lines))
+  indents <- nchar(sub("^([ \\t]*).*", "\\1", lines[nonblank]))
+  indent <- if (length(indents)) min(indents) else 0L
+  if (indent) lines <- substring(lines, indent + 1L)
+  paste(lines, collapse = "\n")
+}

@@ -640,9 +640,9 @@ to_json(Cell(rows = data.frame(id = 1L), tags = list(a = "x")), pretty = FALSE)
 ## Documenting a schema
 
 A description belongs in the schema itself, not beside it in a comment that can drift
-out of sync — this is what a structured-output model actually reads. There are two
-places to attach one: `desc()` (or its infix spelling `%doc%`) documents a single
-field's type, and `struct(.description = )` documents the record as a whole.
+out of sync — this is what a structured-output model actually reads. For concise
+documentation, `desc()` (or its infix spelling `%doc%`) documents a single field's
+type, and `struct(.description = )` documents the record as a whole.
 
 ```{r}
 Contact <- struct("Contact",
@@ -661,6 +661,40 @@ the chain, applied after `[n]`, `[expr]`, `opt()`/`|` and `%default%`:
 age <- int[1][. > 0] %doc% "Age in years, must be positive."
 schema(age)
 ```
+
+When documentation is long, declare the shape first and collect the prose in
+`describe()`. Its `.` argument describes the struct; every other argument is named for
+a field. Assign the result back to the struct name, as with any base R pipe that
+transforms an object.
+
+```{r}
+UserProfile <- struct("UserProfile",
+  id   = int[1][. > 0],
+  name = chr[1],
+  role = one_of("admin", "user") %default% "user"
+) |>
+  describe(
+    . = r"(
+      A user profile returned by the accounts API.
+
+      Profiles may be consumed by several clients, so fields retain their
+      documented meaning across API versions.
+    )",
+    id = r"(
+      Stable identifier for the user. It is positive and never reused after
+      an account has been deleted.
+    )",
+    name = "The user's full display name.",
+    role = "Authorization role; defaults to ordinary user permissions."
+  )
+
+schema(UserProfile)$description
+schema(UserProfile)$properties$id$description
+```
+
+Blank edge lines and common indentation are removed from every description, so long
+raw strings can follow the indentation of the surrounding R code without adding that
+whitespace to the generated JSON Schema. Embedded quotes do not need escaping.
 
 ## S7 compatibility
 

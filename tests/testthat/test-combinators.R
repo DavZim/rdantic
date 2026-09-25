@@ -77,6 +77,14 @@ test_that("desc()/%doc% attach a schema description", {
   expect_error(chr[1] %doc% c("a", "b"))
 })
 
+test_that("descriptions trim blank edge lines and common indentation", {
+  description <- "\n    First line.\n      Indented detail.\n    Last line.\n"
+  expect_identical(
+    schema(chr[1] %doc% description)$description,
+    "First line.\n  Indented detail.\nLast line."
+  )
+})
+
 test_that("desc() replaces, rather than duplicates, .refined()'s description", {
   s <- schema(num[. > 0] %doc% "must be positive")
   expect_identical(s$description, "must be positive")
