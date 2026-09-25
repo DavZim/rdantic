@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,6 +48,16 @@
       <small>Source: <a href="https://github.com/DavZim/rdantic/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.1" id="rdantic-031">rdantic 0.3.1<a class="anchor" aria-label="anchor" href="#rdantic-031"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-3-1">New features<a class="anchor" aria-label="anchor" href="#new-features-0-3-1"></a></h3>
+<ul><li>
+<code><a href="../reference/describe.html">describe()</a></code> adds a struct description and named field descriptions after declaration, keeping long documentation blocks together without obscuring the schema’s type structure. The returned definition is registered so later <code><a href="../reference/ref.html">ref()</a></code> resolution uses the documented schema.</li>
+<li>
+<code><a href="../reference/desc.html">desc()</a></code>, <code>%doc%</code>, <code>struct(.description = )</code>, and <code><a href="../reference/describe.html">describe()</a></code> now normalize multiline descriptions by removing blank edge lines and common indentation, making R raw strings convenient for long schema documentation.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="rdantic-030">rdantic 0.3.0<a class="anchor" aria-label="anchor" href="#rdantic-030"></a></h2>
 <div class="section level3">

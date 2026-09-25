@@ -1,5 +1,23 @@
 # Changelog
 
+## rdantic 0.3.1
+
+### New features
+
+- [`describe()`](https://davzim.github.io/rdantic/reference/describe.md)
+  adds a struct description and named field descriptions after
+  declaration, keeping long documentation blocks together without
+  obscuring the schema’s type structure. The returned definition is
+  registered so later
+  [`ref()`](https://davzim.github.io/rdantic/reference/ref.md)
+  resolution uses the documented schema.
+- [`desc()`](https://davzim.github.io/rdantic/reference/desc.md),
+  `%doc%`, `struct(.description = )`, and
+  [`describe()`](https://davzim.github.io/rdantic/reference/describe.md)
+  now normalize multiline descriptions by removing blank edge lines and
+  common indentation, making R raw strings convenient for long schema
+  documentation.
+
 ## rdantic 0.3.0
 
 ### New features

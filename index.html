@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -502,7 +502,7 @@
 <span><span class="fu"><a href="reference/primitives.html">num</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>                           <span class="co"># ... but a Date is never silently a number</span></span>
 <span><span class="co">#&gt; Error:</span></span>
 <span><span class="co">#&gt; ! 1 validation problem in num</span></span>
-<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-24"  -- a &lt;Date&gt; is never silently unclassed</span></span>
+<span><span class="co">#&gt;   &lt;value&gt;  expected num, got date[1] "2026-09-25"  -- a &lt;Date&gt; is never silently unclassed</span></span>
 <span><span class="fu"><a href="reference/fct.html">fct</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"high"</span><span class="op">)</span><span class="op">(</span><span class="st">"high"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] high</span></span>
 <span><span class="co">#&gt; Levels: low high</span></span>
@@ -947,7 +947,7 @@
 <div class="section level2">
 <h2 id="documenting-a-schema">Documenting a schema<a class="anchor" aria-label="anchor" href="#documenting-a-schema"></a>
 </h2>
-<p>A description belongs in the schema itself, not beside it in a comment that can drift out of sync — this is what a structured-output model actually reads. There are two places to attach one: <code><a href="reference/desc.html">desc()</a></code> (or its infix spelling <code>%doc%</code>) documents a single field’s type, and <code>struct(.description = )</code> documents the record as a whole.</p>
+<p>A description belongs in the schema itself, not beside it in a comment that can drift out of sync — this is what a structured-output model actually reads. For concise documentation, <code><a href="reference/desc.html">desc()</a></code> (or its infix spelling <code>%doc%</code>) documents a single field’s type, and <code>struct(.description = )</code> documents the record as a whole.</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Contact</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Contact"</span>,</span>
 <span>  .description <span class="op">=</span> <span class="st">"A single contact record."</span>,</span>
@@ -984,6 +984,33 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $description</span></span>
 <span><span class="co">#&gt; [1] "Age in years, must be positive."</span></span></code></pre></div>
+<p>When documentation is long, declare the shape first and collect the prose in <code><a href="reference/describe.html">describe()</a></code>. Its <code>.</code> argument describes the struct; every other argument is named for a field. Assign the result back to the struct name, as with any base R pipe that transforms an object.</p>
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">UserProfile</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"UserProfile"</span>,</span>
+<span>  id   <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span>,</span>
+<span>  name <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
+<span>  role <span class="op">=</span> <span class="fu"><a href="reference/one_of.html">one_of</a></span><span class="op">(</span><span class="st">"admin"</span>, <span class="st">"user"</span><span class="op">)</span> <span class="op"><a href="reference/grapes-default-grapes.html">%default%</a></span> <span class="st">"user"</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/describe.html">describe</a></span><span class="op">(</span></span>
+<span>    . <span class="op">=</span> <span class="st">r"(</span></span>
+<span><span class="st">      A user profile returned by the accounts API.</span></span>
+<span><span class="st"></span></span>
+<span><span class="st">      Profiles may be consumed by several clients, so fields retain their</span></span>
+<span><span class="st">      documented meaning across API versions.</span></span>
+<span><span class="st">    )"</span>,</span>
+<span>    id <span class="op">=</span> <span class="st">r"(</span></span>
+<span><span class="st">      Stable identifier for the user. It is positive and never reused after</span></span>
+<span><span class="st">      an account has been deleted.</span></span>
+<span><span class="st">    )"</span>,</span>
+<span>    name <span class="op">=</span> <span class="st">"The user's full display name."</span>,</span>
+<span>    role <span class="op">=</span> <span class="st">"Authorization role; defaults to ordinary user permissions."</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/schema.html">schema</a></span><span class="op">(</span><span class="va">UserProfile</span><span class="op">)</span><span class="op">$</span><span class="va">description</span></span>
+<span><span class="co">#&gt; [1] "A user profile returned by the accounts API.\n\nProfiles may be consumed by several clients, so fields retain their\ndocumented meaning across API versions."</span></span>
+<span><span class="fu"><a href="reference/schema.html">schema</a></span><span class="op">(</span><span class="va">UserProfile</span><span class="op">)</span><span class="op">$</span><span class="va">properties</span><span class="op">$</span><span class="va">id</span><span class="op">$</span><span class="va">description</span></span>
+<span><span class="co">#&gt; [1] "Stable identifier for the user. It is positive and never reused after\nan account has been deleted."</span></span></code></pre></div>
+<p>Blank edge lines and common indentation are removed from every description, so long raw strings can follow the indentation of the surrounding R code without adding that whitespace to the generated JSON Schema. Embedded quotes do not need escaping.</p>
 </div>
 <div class="section level2">
 <h2 id="s7-compatibility">S7 compatibility<a class="anchor" aria-label="anchor" href="#s7-compatibility"></a>
@@ -991,7 +1018,7 @@
 <p><a href="https://rconsortium.github.io/S7/" class="external-link">S7</a> says what a class <em>is</em>; rdantic says what a value must <em>satisfy</em>, and where it failed. They compose in both directions. S7 is a suggested dependency — none of this loads unless you have it.</p>
 <p>In S7, <code>new_class()</code> defines a class with named properties, calling the class constructs an object, and <code>@</code> reads or writes a property. The examples below are enough to use the integration; <code><a href="articles/s7.html">vignette("s7")</a></code> includes a short primer and the precise conversion rules.</p>
 <p>An S7 class can be written wherever a type is expected, and a plain list parses into a real S7 object, so JSON works with no separate JSON mode:</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Pin</span>  <span class="op">&lt;-</span> <span class="fu">S7</span><span class="fu">::</span><span class="fu"><a href="https://rconsortium.github.io/S7/reference/new_class.html" class="external-link">new_class</a></span><span class="op">(</span><span class="st">"Pin"</span>, properties <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>lat <span class="op">=</span> <span class="fu">S7</span><span class="fu">::</span><span class="va"><a href="https://rconsortium.github.io/S7/reference/base_classes.html" class="external-link">class_double</a></span>, lon <span class="op">=</span> <span class="fu">S7</span><span class="fu">::</span><span class="va"><a href="https://rconsortium.github.io/S7/reference/base_classes.html" class="external-link">class_double</a></span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">Trip</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/struct.html">struct</a></span><span class="op">(</span><span class="st">"Trip"</span>, label <span class="op">=</span> <span class="va">chr</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, start <span class="op">=</span> <span class="va">Pin</span><span class="op">)</span></span>
 <span></span>
@@ -1005,7 +1032,7 @@
 <span><span class="co">#&gt;   $start$lat  expected num, got chr[1] "north"  -- strings are never parsed implicitly</span></span>
 <span><span class="co">#&gt;   $start$lon  expected num, got &lt;missing&gt;</span></span></code></pre></div>
 <p><code><a href="reference/s7_struct.html">s7_struct()</a></code> goes the other way: <code><a href="reference/struct.html">struct()</a></code> with an S7 class as the result. The fields become S7 properties that validate — and coerce — through their rdantic types, on construction and on <code>@&lt;-</code>. <code><a href="reference/as_s7_class.html">as_s7_class()</a></code> does the same for a struct you already have.</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Account</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/s7_struct.html">s7_struct</a></span><span class="op">(</span><span class="st">"Account"</span>, id <span class="op">=</span> <span class="va">int</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">]</span>, credit <span class="op">=</span> <span class="va">num</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">[</span><span class="va">.</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">]</span> <span class="op"><a href="reference/grapes-default-grapes.html">%default%</a></span> <span class="fl">0</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu">Account</span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>

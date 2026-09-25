@@ -16,6 +16,8 @@
 - [`desc()`](https://davzim.github.io/rdantic/reference/desc.md)
   [`` `%doc%` ``](https://davzim.github.io/rdantic/reference/desc.md) :
   Attach a description to a type's schema
+- [`describe()`](https://davzim.github.io/rdantic/reference/describe.md)
+  : Describe a struct and its fields
 - [`extend()`](https://davzim.github.io/rdantic/reference/extend.md) :
   Subclass a struct
 - [`fct()`](https://davzim.github.io/rdantic/reference/fct.md) : Factor

@@ -514,7 +514,7 @@ date("17/05/2024")
 num(Sys.Date())                           # ... but a Date is never silently a number
 #> Error:
 #> ! 1 validation problem in num
-#>   <value>  expected num, got date[1] "2026-09-24"  -- a <Date> is never silently unclassed
+#>   <value>  expected num, got date[1] "2026-09-25"  -- a <Date> is never silently unclassed
 fct("low", "high")("high")
 #> [1] high
 #> Levels: low high
@@ -1134,7 +1134,7 @@ to_json(Cell(rows = data.frame(id = 1L), tags = list(a = "x")), pretty = FALSE)
 
 A description belongs in the schema itself, not beside it in a comment
 that can drift out of sync — this is what a structured-output model
-actually reads. There are two places to attach one:
+actually reads. For concise documentation,
 [`desc()`](https://davzim.github.io/rdantic/reference/desc.md) (or its
 infix spelling `%doc%`) documents a single field’s type, and
 `struct(.description = )` documents the record as a whole.
@@ -1185,6 +1185,46 @@ schema(age)
 #> $description
 #> [1] "Age in years, must be positive."
 ```
+
+When documentation is long, declare the shape first and collect the
+prose in
+[`describe()`](https://davzim.github.io/rdantic/reference/describe.md).
+Its `.` argument describes the struct; every other argument is named for
+a field. Assign the result back to the struct name, as with any base R
+pipe that transforms an object.
+
+``` r
+
+UserProfile <- struct("UserProfile",
+  id   = int[1][. > 0],
+  name = chr[1],
+  role = one_of("admin", "user") %default% "user"
+) |>
+  describe(
+    . = r"(
+      A user profile returned by the accounts API.
+
+      Profiles may be consumed by several clients, so fields retain their
+      documented meaning across API versions.
+    )",
+    id = r"(
+      Stable identifier for the user. It is positive and never reused after
+      an account has been deleted.
+    )",
+    name = "The user's full display name.",
+    role = "Authorization role; defaults to ordinary user permissions."
+  )
+
+schema(UserProfile)$description
+#> [1] "A user profile returned by the accounts API.\n\nProfiles may be consumed by several clients, so fields retain their\ndocumented meaning across API versions."
+schema(UserProfile)$properties$id$description
+#> [1] "Stable identifier for the user. It is positive and never reused after\nan account has been deleted."
+```
+
+Blank edge lines and common indentation are removed from every
+description, so long raw strings can follow the indentation of the
+surrounding R code without adding that whitespace to the generated JSON
+Schema. Embedded quotes do not need escaping.
 
 ## S7 compatibility
 

@@ -21,6 +21,7 @@
 <url><loc>https://davzim.github.io/rdantic/reference/as_type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/datetimes.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/desc.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/describe.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-abort.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-abort_msg.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-atomic.html</loc></url>
@@ -31,6 +32,7 @@
 <url><loc>https://davzim.github.io/rdantic/reference/dot-check_fields.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-coerce_hint.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-comparable.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-description.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-did_you_mean.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-entry.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-fail.html</loc></url>

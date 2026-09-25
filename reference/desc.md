@@ -45,6 +45,13 @@ new, unregistered constructor, so a
 [`ref()`](https://davzim.github.io/rdantic/reference/ref.md) to that
 struct's name would still see the undescribed one.
 
+Multiline descriptions are dedented: blank first and last lines and the
+indentation shared by every nonblank line are removed. This makes raw
+strings (`r"(...)"`) convenient for long prose. Use
+[`describe()`](https://davzim.github.io/rdantic/reference/describe.md)
+to keep all of a struct's longer descriptions together after its
+declaration.
+
 ## Examples
 
 ``` r

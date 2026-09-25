@@ -19,7 +19,7 @@ duplicates, one .refined() wrote automatically.'></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">rdantic</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,6 +99,10 @@ duplicates, one <code><a href="dot-refined.html">.refined()</a></code> wrote aut
     <p>A struct's own top-level description is set with <code>struct(.description = )</code>
 instead: <code>desc()</code> on a whole struct builds a new, unregistered constructor,
 so a <code><a href="ref.html">ref()</a></code> to that struct's name would still see the undescribed one.</p>
+<p>Multiline descriptions are dedented: blank first and last lines and the
+indentation shared by every nonblank line are removed. This makes raw
+strings (<code>r"(...)"</code>) convenient for long prose. Use <code><a href="describe.html">describe()</a></code> to keep
+all of a struct's longer descriptions together after its declaration.</p>
     </div>
 
     <div class="section level2">
