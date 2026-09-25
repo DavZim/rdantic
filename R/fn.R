@@ -62,6 +62,105 @@
   if (is.name(f)) paste0(as.character(f), "()") else "<typed fn>()"
 }
 
+#' Type for any typed function
+#'
+#' `typed_fn` accepts any function created by [fn()]. Use [fn_type()] when its
+#' declared argument and return types must match a particular signature.
+#'
+#' @param x A value to validate.
+#' @return A type.
+#' @export
+#' @examples
+#' identity_int <- fn(x = int[1], ~ int[1], { x })
+#' typed_fn(identity_int)
+#' try(typed_fn(function(x) x))
+typed_fn <- new_type(
+  "typed_fn",
+  function(x, path) {
+    if (inherits(x, "typed_fn")) x else .bad(path, "typed_fn", .got(x))
+  }
+)
+
+#' Format a typed-function signature
+#'
+#' @param types Named argument types.
+#' @param ret The return type.
+#' @return A single string.
+#' @keywords internal
+#' @noRd
+.fn_signature <- function(types, ret) {
+  args <- vapply(
+    names(types),
+    function(name) {
+      spec <- .spec(types[[name]])
+      paste0(
+        if (name == "...") "..." else name,
+        ": ",
+        spec$name,
+        if (isTRUE(spec$has_default)) paste0(" = ", deparse1(spec$default))
+      )
+    },
+    ""
+  )
+  paste0("<fn> (", paste(args, collapse = ", "), ") -> ", .spec(ret)$name)
+}
+
+#' Type for a typed function with a particular signature
+#'
+#' Builds a type that accepts functions created by [fn()] only when their
+#' declared argument names, argument types, defaults, and return type match.
+#'
+#' @param ... Named argument types and an optional `~ type` return declaration.
+#' @return A type.
+#' @export
+#' @examples
+#' int_mapper <- fn_type(x = int[1], ~ int[1])
+#' int_mapper(fn(x = int[1], ~ int[1], { x + 1L }))
+#' try(int_mapper(fn(x = num[1], ~ num[1], { x + 1 })))
+fn_type <- function(...) {
+  exprs <- as.list(substitute(list(...)))[-1]
+  nms <- names(exprs)
+  if (is.null(nms)) nms <- rep("", length(exprs))
+  env <- parent.frame()
+  is_formula <- function(expr)
+    is.call(expr) && identical(expr[[1]], as.name("~")) && length(expr) == 2
+  ret_i <- which(nms == "" & vapply(exprs, is_formula, NA))
+  unnamed_i <- which(nms == "")
+  if (length(ret_i) > 1) stop("fn_type() accepts one return-type formula (~ T)")
+  if (length(setdiff(unnamed_i, ret_i)))
+    stop("fn_type() argument types must be named")
+
+  arg_i <- which(nms != "")
+  types <- lapply(exprs[arg_i], function(expr) as_type(eval(expr, env)))
+  names(types) <- nms[arg_i]
+  ret <- if (length(ret_i)) as_type(eval(exprs[[ret_i]][[2]], env)) else
+    anything
+  name <- .fn_signature(types, ret)
+  key <- function(type) {
+    spec <- .spec(type)
+    list(
+      name = spec$name,
+      has_default = isTRUE(spec$has_default),
+      default = if (isTRUE(spec$has_default)) spec$default
+    )
+  }
+  expected <- list(args = lapply(types, key), ret = .spec(ret)$name)
+
+  new_type(
+    name,
+    function(x, path) {
+      if (!inherits(x, "typed_fn")) return(.bad(path, name, .got(x)))
+      actual_types <- attr(x, "types")
+      actual_ret <- attr(x, "ret")
+      actual <- list(args = lapply(actual_types, key), ret = .spec(actual_ret)$name)
+      if (identical(expected, actual)) x else
+        .bad(path, name, .fn_signature(actual_types, actual_ret))
+    },
+    args = types,
+    ret = ret
+  )
+}
+
 #' Define a typed function
 #'
 #' Types sit where R would put defaults, an unnamed formula `~ T` declares the
@@ -194,27 +293,6 @@ fn <- function(...) {
 #' print(fn(x = int[1], y = chr[1] %default% "a", ~ chr[1], { paste0(y, x) }))
 print.typed_fn <- function(x, ...) {
   types <- attr(x, "types")
-  args <- vapply(
-    names(types),
-    function(n) {
-      s <- .spec(types[[n]])
-      if (n == "...") return(paste0("...: ", s$name))
-      paste0(
-        n,
-        ": ",
-        s$name,
-        if (isTRUE(s$has_default)) paste0(" = ", deparse1(s$default))
-      )
-    },
-    ""
-  )
-  cat(
-    "<fn> (",
-    paste(args, collapse = ", "),
-    ") -> ",
-    .spec(attr(x, "ret"))$name,
-    "\n",
-    sep = ""
-  )
+  cat(.fn_signature(types, attr(x, "ret")), "\n", sep = "")
   invisible(x)
 }

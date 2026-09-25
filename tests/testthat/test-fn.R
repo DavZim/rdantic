@@ -87,3 +87,31 @@ test_that("printing shows the signature", {
   f <- fn(x = int[1], y = chr[1] %default% "a", ~ chr[1], { paste0(y, x) })
   expect_output(print(f), "<fn> (x: int[1], y: chr[1] = \"a\") -> chr[1]", fixed = TRUE)
 })
+
+test_that("typed_fn accepts any typed function", {
+  f <- fn(x = int[1], ~ int[1], { x })
+  expect_identical(typed_fn(f), f)
+  expect_error(typed_fn(function(x) x), class = "typed_error")
+})
+
+test_that("fn_type checks a typed function's declared signature", {
+  mapper <- fn_type(x = int[1], ~ chr[1])
+  good <- fn(x = int[1], ~ chr[1], { as.character(x) })
+  wrong_arg <- fn(x = num[1], ~ chr[1], { as.character(x) })
+  wrong_return <- fn(x = int[1], ~ int[1], { x })
+
+  expect_identical(mapper(good), good)
+  expect_error(mapper(wrong_arg), "<fn> (x: num[1]) -> chr[1]", fixed = TRUE)
+  expect_error(mapper(wrong_return), "<fn> (x: int[1]) -> int[1]", fixed = TRUE)
+  expect_error(mapper(function(x) x), class = "typed_error")
+})
+
+test_that("fn_type includes names and defaults in the signature", {
+  expected <- fn_type(x = int[1] %default% 1L, ~ int[1])
+  wrong_name <- fn(y = int[1] %default% 1L, ~ int[1], { y })
+  wrong_default <- fn(x = int[1] %default% 2L, ~ int[1], { x })
+
+  expect_false(is_valid(expected, wrong_name))
+  expect_false(is_valid(expected, wrong_default))
+  expect_error(fn_type(int[1], ~ int[1]), "must be named")
+})

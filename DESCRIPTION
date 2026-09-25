@@ -1,6 +1,6 @@
 Package: rdantic
 Title: Declared Types, Checked at the Boundary
-Version: 0.3.1
+Version: 0.3.2
 Authors@R:
     person("David", "Zimmermann-Kollenda", , "david_j_zimmermann@hotmail.com", role = c("aut", "cre"))
 Description: A proof-of-concept port of pydantic's central idea to R. Types are
