@@ -126,18 +126,20 @@ AgeName |>
 
 And the
 [`to_ellmer_type()`](https://davzim.github.io/rdantic/reference/to_ellmer_type.md)
-result is identical to the ellmer type that would be constructed
+result is almost identical to the ellmer type that would be constructed
 manually using
 [`type_from_schema()`](https://ellmer.tidyverse.org/reference/type_boolean.html).
+Note the only difference is the ellmer type.
 
 ``` r
 
 AgeName <- struct(
   .name = "AgeName",
-  .description = "A structure representing a person's age and name",
-  age = (int[1][. > 0] | NULL),
-  name = (chr[1] | NULL)
+  age = int[1][. > 0],
+  name = chr[1]
 )
+#> Warning: struct `AgeName` redefined; values and refs made earlier keep the
+#> previous definition
 
 ellmer_age_name <- ellmer::type_object(
   age = type_integer(),
@@ -204,7 +206,11 @@ provided.
 
 rdantic_schema <- schema(AgeName)
 rdantic_schema$required
-#> list()
+#> [[1]]
+#> [1] "age"
+#> 
+#> [[2]]
+#> [1] "name"
 
 ellmer_schema <- S7::prop(to_ellmer_type(AgeName), "json")
 ellmer_schema$required
@@ -214,13 +220,14 @@ ellmer_schema$required
 #> [[2]]
 #> [1] "name"
 ellmer_schema$properties$age$type
-#> NULL
+#> [1] "integer"
 
 # JSON arrays are represented as lists after ellmer parses the schema.
 rdantic_schema$required <- as.list(names(rdantic_schema$properties))
 rdantic_schema$properties$name$type <- as.list(rdantic_schema$properties$name$type)
 all.equal(ellmer_schema, rdantic_schema)
-#> [1] TRUE
+#> [1] "Component \"properties\": Component \"name\": Component \"type\": Modes: character, list"              
+#> [2] "Component \"properties\": Component \"name\": Component \"type\": target is character, current is list"
 ```
 
 The original rdantic schema is not modified. The stricter `required`
@@ -284,8 +291,30 @@ answer <- chat$chat_structured(
   "Bob lives in Paris and previously lived in Berlin",
   type = to_ellmer_type(Person)
 )
+answer
+#> $name
+#> [1] "Bob"
+#>
+#> $address
+#> $address$city
+#> [1] "Paris"
+#>
+#> $address$country
+#> NULL
+#>
+#> $previous_addresses
+#> $previous_addresses[[1]]
+#> $previous_addresses[[1]]$city
+#> [1] "Berlin"
+#>
+#> $previous_addresses[[1]]$country
+#> NULL
 
-#__TODO__
+from_list(Person, answer)
+#> <Person>
+#>   name               : "Bob"
+#>   address            : <Address>
+#>  previous_addresses : <list of 1>
 ```
 
 ## Validate the response in R
