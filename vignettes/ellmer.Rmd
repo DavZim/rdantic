@@ -137,14 +137,15 @@ AgeName |>
   ellmer::type_from_schema()
 ```
 
-And the `to_ellmer_type()` result is identical to the ellmer type that would be constructed manually using `type_from_schema()`.
+And the `to_ellmer_type()` result is almost identical to the ellmer type that
+would be constructed manually using `type_from_schema()`.
+Note the only difference is the ellmer type.
 
 ```{r}
 AgeName <- struct(
   .name = "AgeName",
-  .description = "A structure representing a person's age and name",
-  age = (int[1][. > 0] | NULL),
-  name = (chr[1] | NULL)
+  age = int[1][. > 0],
+  name = chr[1]
 )
 
 ellmer_age_name <- ellmer::type_object(
@@ -258,8 +259,30 @@ answer <- chat$chat_structured(
   "Bob lives in Paris and previously lived in Berlin",
   type = to_ellmer_type(Person)
 )
+answer
+#> $name
+#> [1] "Bob"
+#>
+#> $address
+#> $address$city
+#> [1] "Paris"
+#>
+#> $address$country
+#> NULL
+#>
+#> $previous_addresses
+#> $previous_addresses[[1]]
+#> $previous_addresses[[1]]$city
+#> [1] "Berlin"
+#>
+#> $previous_addresses[[1]]$country
+#> NULL
 
-#__TODO__
+from_list(Person, answer)
+#> <Person>
+#>   name               : "Bob"
+#>   address            : <Address>
+#>  previous_addresses : <list of 1>
 ```
 
 ## Validate the response in R
