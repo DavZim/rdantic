@@ -75,6 +75,46 @@ to_json <- function(x, pretty = TRUE, ...) {
   )
 }
 
+#' Convert an rdantic type or schema to an ellmer type
+#'
+#' ellmer requires every property in a JSON Schema object to be listed in
+#' `required`, including properties whose value may be `null`. rdantic keeps
+#' nullable fields optional, so this adapter adds those property names while
+#' leaving the original schema unchanged.
+#'
+#' @param x An rdantic type, or a JSON Schema list returned by [schema()].
+#' @return An ellmer type.
+#' @export
+#' @examples
+#' \dontrun{
+#' AgeName <- struct(
+#'   "AgeName",
+#'   age = (int[1][. > 0] | NULL),
+#'   name = (chr[1] | NULL)
+#' )
+#' to_ellmer_type(AgeName)
+#' }
+to_ellmer_type <- function(x) {
+  if (!requireNamespace("ellmer", quietly = TRUE))
+    stop("to_ellmer_type() needs the ellmer package", call. = FALSE)
+
+  x <- if (is.list(x) && !inherits(x, "typed_struct")) x else schema(x)
+  x <- .ellmer_schema(x)
+  ellmer::type_from_schema(to_json(x))
+}
+
+#' Make JSON Schema objects acceptable to ellmer
+#'
+#' @param x A JSON Schema fragment.
+#' @return A copied and normalised JSON Schema fragment.
+#' @keywords internal
+.ellmer_schema <- function(x) {
+  if (!is.list(x)) return(x)
+  if (!is.null(x$properties) && is.list(x$properties))
+    x$required <- as.list(names(x$properties))
+  lapply(x, .ellmer_schema)
+}
+
 #' Walk a value alongside its declared type
 #'
 #' A length-1 vector is only unboxed to a JSON scalar when its type says `[1]`

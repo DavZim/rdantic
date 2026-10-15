@@ -21,6 +21,7 @@ Imports:
     utils
 Suggests:
     jsonlite,
+    ellmer,
     knitr,
     rmarkdown,
     S7,

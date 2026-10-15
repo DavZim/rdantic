@@ -16,9 +16,10 @@ knitr::opts_chunk$set(
 
 **Declared types, checked at the boundary.** pydantic's idea, in base R.
 
-> **Status: proof of concept.** 
-> No S4, no R6, no code generation — closures, attributes and plain lists.
-> Optional two-way interop with [S7](https://rconsortium.github.io/S7/).
+> **Status: proof of concept.** Runtime-declared types with `struct()` and
+> two-way [S7](https://rconsortium.github.io/S7/) interop, typed functions,
+> fail-early validation, JSON Schema export/import, and optional ellmer
+> compatibility — built from closures, attributes and plain lists.
 
 > **Feedback wanted!**
 
