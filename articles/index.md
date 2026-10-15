@@ -22,3 +22,5 @@
 - [Extending rdantic:
   new_type()](https://davzim.github.io/rdantic/articles/extending-rdantic.md):
 - [S7 compatibility](https://davzim.github.io/rdantic/articles/s7.md):
+- [Using rdantic with
+  ellmer](https://davzim.github.io/rdantic/articles/ellmer.md):

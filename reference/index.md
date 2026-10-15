@@ -88,6 +88,8 @@
   Define a record type
 - [`` `[`( ``*`<type>`*`)`](https://davzim.github.io/rdantic/reference/sub-.type.md)
   : Fix a type's length, or add a constraint
+- [`to_ellmer_type()`](https://davzim.github.io/rdantic/reference/to_ellmer_type.md)
+  : Convert an rdantic type or schema to an ellmer type
 - [`to_json()`](https://davzim.github.io/rdantic/reference/to_json.md) :
   Serialise to JSON, guided by the declared types
 - [`to_list()`](https://davzim.github.io/rdantic/reference/to_list.md) :

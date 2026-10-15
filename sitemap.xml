@@ -3,6 +3,7 @@
 <url><loc>https://davzim.github.io/rdantic/LICENSE-text.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/LICENSE.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/containers.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/articles/ellmer.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/errors-and-validation.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/extending-rdantic.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/articles/index.html</loc></url>
@@ -34,6 +35,7 @@
 <url><loc>https://davzim.github.io/rdantic/reference/dot-comparable.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-description.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-did_you_mean.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/dot-ellmer_schema.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-entry.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-fail.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/dot-fmt.html</loc></url>
@@ -111,6 +113,7 @@
 <url><loc>https://davzim.github.io/rdantic/reference/schema.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/struct.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/sub-.type.html</loc></url>
+<url><loc>https://davzim.github.io/rdantic/reference/to_ellmer_type.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/to_json.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/to_list.html</loc></url>
 <url><loc>https://davzim.github.io/rdantic/reference/try_parse.html</loc></url>
